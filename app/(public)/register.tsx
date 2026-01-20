@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 export default function LoginScreen() {
     return (
         <RNLayout>
-            <Link href={"/register"}>Register</Link>
+            <Link href={"/login"}>Login</Link>
         </RNLayout>
     );
 }

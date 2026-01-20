@@ -20,6 +20,8 @@ export default function RootLayout() {
                     <Stack
                         screenOptions={{
                             headerShown: false,
+
+                            animation: "ios_from_right",
                         }}
                     >
                         <Stack.Protected guard={isLoggedIn}>

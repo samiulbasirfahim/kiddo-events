@@ -1,12 +1,17 @@
-import { RNText } from "@/components/ui/text";
+import { RNLayout } from "@/components/layout/layout";
+import { RNButton } from "@/components/ui/button";
 import { Link } from "expo-router";
-import { View } from "react-native";
 
-export default function Screen() {
+export default function ProtectedScreen() {
     return (
-        <View>
-            <RNText>Welcome to the private screen!</RNText>
-            <Link href={"/login"}>GO to Login Screen</Link>
-        </View>
+        <RNLayout>
+            <Link asChild href={"/(protected)/event-details"} push>
+                <RNButton variant="accent">Event Details Page</RNButton>
+            </Link>
+
+            <Link asChild href={"/(protected)/chats"} push>
+                <RNButton variant="accent">Chat Push</RNButton>
+            </Link>
+        </RNLayout>
     );
 }

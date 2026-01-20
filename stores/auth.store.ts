@@ -5,5 +5,5 @@ type AuthStore = {
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
-    isLoggedIn: false,
+    isLoggedIn: true,
 }));
