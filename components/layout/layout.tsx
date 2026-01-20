@@ -1,46 +1,44 @@
+import { COLORS } from "@/constant/colors";
 import { ReactNode } from "react";
+import { ScrollViewProps } from "react-native";
 import {
     KeyboardAwareScrollView,
     KeyboardAwareScrollViewProps,
 } from "react-native-keyboard-controller";
 import {
-    SafeAreaViewProps,
     SafeAreaView,
+    SafeAreaViewProps,
+    useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 type Props = {
     children: ReactNode[] | ReactNode;
-    keyboardAwareScrollViewProps?: KeyboardAwareScrollViewProps;
-    safeAreaProps?: SafeAreaViewProps;
-};
+    centered?: boolean;
+    shouldntHaveTopInsets?: boolean;
+} & KeyboardAwareScrollViewProps;
 
-export function RNLayout({
-    children,
-    keyboardAwareScrollViewProps,
-    safeAreaProps,
-}: Props) {
+export function RNLayout({ children, centered, ...props }: Props) {
+    const { bottom, top } = useSafeAreaInsets();
     return (
-        <SafeAreaView
-            {...safeAreaProps}
-            style={[
+        <KeyboardAwareScrollView
+            {...props}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
                 {
-                    flex: 1,
+                    backgroundColor: COLORS.background,
+                    flexGrow: 1,
+                    paddingHorizontal: 16,
+                    paddingTop: props.shouldntHaveTopInsets ? 16 : top + 16,
+                    paddingBottom: bottom,
+                    alignItems: centered ? "center" : "flex-start",
                 },
-                safeAreaProps?.style,
+                props?.contentContainerStyle,
             ]}
         >
-            <KeyboardAwareScrollView
-                {...keyboardAwareScrollViewProps}
-                style={[{ flex: 1 }, keyboardAwareScrollViewProps?.style]}
-                contentContainerStyle={[
-                    { flexGrow: 1 },
-                    keyboardAwareScrollViewProps?.contentContainerStyle,
-                ]}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="interactive"
-            >
-                {children}
-            </KeyboardAwareScrollView>
-        </SafeAreaView>
+            {children}
+        </KeyboardAwareScrollView>
     );
 }

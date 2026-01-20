@@ -5,7 +5,7 @@ import { COLORS } from "@/constant/colors";
 const typography = StyleSheet.create({
     h1: {
         fontSize: 36,
-        lineHeight: 40,
+        lineHeight: 46,
         fontWeight: "800",
         color: COLORS.textPrimary,
     },
@@ -66,12 +66,19 @@ const typography = StyleSheet.create({
         textTransform: "uppercase",
         color: COLORS.textSecondary,
     },
+    logo: {
+        fontSize: 28,
+        lineHeight: 40,
+        color: COLORS.primary,
+        fontFamily: "ZenDots-Regular",
+    },
 });
 
 export type TextVariant = keyof typeof typography;
 
 export type RNTextProps = TextProps & {
     variant?: TextVariant;
+    centered?: boolean;
     children: ReactNode;
     color?: keyof typeof COLORS; // Optional override
 };
@@ -81,6 +88,7 @@ export function RNText({
     children,
     style,
     color,
+    centered = false,
     ...props
 }: RNTextProps) {
     return (
@@ -89,6 +97,12 @@ export function RNText({
                 typography[variant],
                 color ? { color: COLORS[color] } : null,
                 style,
+                centered
+                    ? {
+                        alignSelf: "center",
+                        textAlign: "center",
+                    }
+                    : null,
             ]}
             {...props}
         >

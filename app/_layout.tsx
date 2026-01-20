@@ -8,9 +8,13 @@ import { useLoadApplication } from "@/hooks/useLoadApplication";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 export default function RootLayout() {
-    useLoadApplication();
+    const { fontLoaded, isAppReady } = useLoadApplication();
 
     const isLoggedIn = useAuthStore((x) => x.isLoggedIn);
+
+    if (!isAppReady || !fontLoaded) {
+        return null;
+    }
 
     return (
         <QueryClientProvider client={queryClient}>
@@ -28,6 +32,7 @@ export default function RootLayout() {
                             <Stack.Screen name="(protected)" />
                         </Stack.Protected>
                         <Stack.Protected guard={!isLoggedIn}>
+                            <Stack.Screen name="(others)" />
                             <Stack.Screen name="(public)" />
                         </Stack.Protected>
                     </Stack>

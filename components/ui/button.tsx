@@ -18,24 +18,79 @@ const buttonVariants = {
         borderColor: COLORS.backgroundSecondary,
     },
     ghost: { backgroundColor: "transparent" },
+    link: { backgroundColor: "transparent", paddingVertical: 0 },
 };
 
 const buttonSizes = {
-    sm: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8 },
-    md: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
-    lg: { paddingVertical: 18, paddingHorizontal: 28, borderRadius: 16 }, // "Big"
+    sm: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 14 },
+    md: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 22 },
+    lg: { paddingVertical: 18, paddingHorizontal: 28, borderRadius: 28 },
 };
 
-const textVariantMap: Record<keyof typeof buttonSizes, TextVariant> = {
-    sm: "caption",
-    md: "bodyBold",
-    lg: "h3",
+/**
+ * Text config table (variant-aware)
+ */
+const buttonTextConfig: Record<
+    keyof typeof buttonVariants,
+    {
+        color: string;
+        variantBySize?: Record<keyof typeof buttonSizes, TextVariant>;
+    }
+> = {
+    default: {
+        color: COLORS.background,
+        variantBySize: {
+            sm: "caption",
+            md: "bodyBold",
+            lg: "h3",
+        },
+    },
+    secondary: {
+        color: COLORS.background,
+        variantBySize: {
+            sm: "caption",
+            md: "bodyBold",
+            lg: "h3",
+        },
+    },
+    accent: {
+        color: COLORS.background,
+        variantBySize: {
+            sm: "caption",
+            md: "bodyBold",
+            lg: "h3",
+        },
+    },
+    outline: {
+        color: COLORS.primary,
+        variantBySize: {
+            sm: "caption",
+            md: "bodyBold",
+            lg: "h3",
+        },
+    },
+    ghost: {
+        color: COLORS.primary,
+        variantBySize: {
+            sm: "caption",
+            md: "bodyBold",
+            lg: "h3",
+        },
+    },
+    link: {
+        color: COLORS.primary,
+        variantBySize: {
+            sm: "caption",
+            md: "body",
+            lg: "bodyBold",
+        },
+    },
 };
 
 interface ButtonProps extends TouchableOpacityProps {
     variant?: keyof typeof buttonVariants;
     size?: keyof typeof buttonSizes;
-    fullWidth?: boolean; // New Prop
+    fullWidth?: boolean;
     loading?: boolean;
     children: ReactNode;
 }
@@ -50,8 +105,8 @@ export function RNButton({
     style,
     ...props
 }: ButtonProps) {
-    const isOutline = variant === "outline" || variant === "ghost";
-    const contentColor = isOutline ? COLORS.primary : COLORS.background;
+    const textConfig = buttonTextConfig[variant];
+    const textVariant = textConfig.variantBySize?.[size] ?? "body";
 
     return (
         <TouchableOpacity
@@ -61,16 +116,17 @@ export function RNButton({
                 styles.base,
                 buttonVariants[variant],
                 buttonSizes[size],
-                fullWidth && { width: "100%" }, // Conditional full width
+                variant === "link" && styles.linkPaddingReset,
+                fullWidth && { width: "100%" },
                 (disabled || loading) && styles.disabled,
                 style,
             ]}
             {...props}
         >
             {loading ? (
-                <ActivityIndicator color={contentColor} size="small" />
+                <ActivityIndicator color={textConfig.color} size="small" />
             ) : (
-                <RNText variant={textVariantMap[size]} style={{ color: contentColor }}>
+                <RNText variant={textVariant} style={{ color: textConfig.color }}>
                     {children}
                 </RNText>
             )}
@@ -83,9 +139,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "flex-start", // Default to wrapping content
+        alignSelf: "flex-start",
     },
     disabled: {
         opacity: 0.5,
+    },
+    linkPaddingReset: {
+        paddingVertical: 0,
     },
 });
