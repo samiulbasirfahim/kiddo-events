@@ -4,7 +4,7 @@ import { RNButton } from "@/components/ui/button";
 import { RNInput } from "@/components/ui/input";
 import { RNText } from "@/components/ui/text";
 import { router } from "expo-router";
-import { Lock, Mail } from "lucide-react-native";
+import { Lock, Mail, User } from "lucide-react-native";
 import { View } from "react-native";
 
 export default function LoginScreen() {
@@ -14,6 +14,7 @@ export default function LoginScreen() {
             <AppLogo />
 
             <View style={{ width: "100%", marginTop: 40, gap: 16 }}>
+                <RNInput placeholder="Enter your Name" leftIcon={User} label="Name" />
                 <RNInput placeholder="Enter your Email" leftIcon={Mail} label="Email" />
                 <RNInput
                     leftIcon={Lock}

@@ -36,7 +36,14 @@ export function RNInput({
     return (
         <View style={{ width: "100%", marginTop: marginTop || 0 }}>
             {label && label?.length > 0 && (
-                <RNText variant="bodyBold">{label}</RNText>
+                <RNText
+                    variant="body"
+                    style={{
+                        marginBottom: 5,
+                    }}
+                >
+                    {label}
+                </RNText>
             )}
             <View style={sts.container}>
                 {LeftIcon && (

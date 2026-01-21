@@ -1,7 +1,7 @@
 import { COLORS } from "@/constant/colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
-import { TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export function StackBottomBorder() {
     return (
@@ -11,10 +11,23 @@ export function StackBottomBorder() {
                     backgroundColor: COLORS.background,
                 },
                 headerShadowVisible: false,
+                headerTitle(props) {
+                    return (
+                        <Text
+                            {...props}
+                            style={{
+                                alignSelf: "flex-start",
+                                textAlign: "left",
+                                width: "100%",
+                                fontWeight: "500",
+                                fontSize: 20,
+                            }}
+                        />
+                    );
+                },
                 headerTitleAlign: "left",
                 headerTitleStyle: {
-                    // fontFamily: "ZenDots-Regular",
-                    fontWeight: "800",
+                    fontWeight: "500",
                     fontSize: 20,
                 },
 
