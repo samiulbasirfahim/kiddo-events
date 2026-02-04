@@ -15,7 +15,7 @@ export default function Screen() {
     }, [email]);
 
     return (
-        <RNLayout shouldntHaveTopInsets>
+        <RNLayout includeHeaderHeight>
             <Stack.Screen options={{ title: "Forgot Password" }} />
             <RNText variant="h2">Forgot Password?</RNText>
             <RNText variant="bodySecondary" style={{ marginTop: 8 }}>

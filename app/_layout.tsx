@@ -24,7 +24,6 @@ export default function RootLayout() {
                     <Stack
                         screenOptions={{
                             headerShown: false,
-
                             animation: "ios_from_right",
                         }}
                     >
@@ -32,9 +31,9 @@ export default function RootLayout() {
                             <Stack.Screen name="(protected)" />
                         </Stack.Protected>
                         <Stack.Protected guard={!isLoggedIn}>
-                            <Stack.Screen name="(others)" />
                             <Stack.Screen name="(public)" />
                         </Stack.Protected>
+                        <Stack.Screen name="(others)" />
                     </Stack>
                 </KeyboardProvider>
             </GestureHandlerRootView>

@@ -14,7 +14,7 @@ const buttonVariants = {
     accent: { backgroundColor: COLORS.accent },
     outline: {
         backgroundColor: "transparent",
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: COLORS.backgroundSecondary,
     },
     ghost: { backgroundColor: "transparent" },

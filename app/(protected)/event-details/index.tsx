@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { Link } from "expo-router";
+import { Link, router, Stack } from "expo-router";
 import {
     ArrowLeft,
     Calendar,
@@ -26,15 +26,16 @@ import { RNButton } from "@/components/ui/button";
 
 export default function Screen() {
     const { height, width } = useWindowDimensions();
-    const { top } = useSafeAreaInsets();
+    const { top, bottom } = useSafeAreaInsets();
 
     const IMAGE_HEIGHT = height * 0.5;
 
     return (
         <View style={styles.outerContainer}>
+            <Stack.Screen options={{ headerShown: false }} />
             <View style={[styles.imageWrapper, { width, height: IMAGE_HEIGHT }]}>
                 <Image
-                    source={require("../../assets/images/event-details-top-image.png")}
+                    source={require("@/assets/images/event-details-top-image.png")}
                     style={StyleSheet.absoluteFill}
                     contentFit="cover"
                 />
@@ -108,8 +109,22 @@ export default function Screen() {
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
-                <RNButton fullWidth>Buy Ticket - 15$</RNButton>
+            <View
+                style={[
+                    styles.footer,
+                    {
+                        paddingBottom: bottom + 16,
+                    },
+                ]}
+            >
+                <RNButton
+                    onPress={() => {
+                        router.push("/event-details/confirm-purchase");
+                    }}
+                    fullWidth
+                >
+                    Buy Ticket - 15$
+                </RNButton>
             </View>
         </View>
     );
@@ -174,7 +189,6 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 20,
-        paddingBottom: 32,
         alignItems: "center",
         backgroundColor: COLORS.background,
         borderTopWidth: 1,

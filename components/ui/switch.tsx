@@ -6,38 +6,31 @@ import Animated, {
     withTiming,
 } from "react-native-reanimated";
 
-type RNCheckboxProps = {
+type RNSwitchProps = {
     value?: boolean;
     onChange: (checked: boolean) => void;
-    size?: number;
 };
 
-export function RNCheckbox({
-    value = false,
-    onChange,
-    size = 22,
-}: RNCheckboxProps) {
+export function RNSwitch({ value = false, onChange }: RNSwitchProps) {
     const toggle = () => {
         onChange(!value);
     };
 
-    const checkStyle = useAnimatedStyle(() => {
+    const knobStyle = useAnimatedStyle(() => {
         return {
             transform: [
                 {
-                    scale: withSpring(value ? 1 : 0),
+                    translateX: withSpring(value ? 18 : 2),
                 },
             ],
-            opacity: withTiming(value ? 1 : 0),
         };
     }, [value]);
 
-    const boxStyle = useAnimatedStyle(() => {
+    const trackStyle = useAnimatedStyle(() => {
         return {
             backgroundColor: withTiming(
                 value ? COLORS.primary : COLORS.backgroundLight,
             ),
-            borderColor: withTiming(value ? COLORS.primary : COLORS.border),
         };
     }, [value]);
 
@@ -46,25 +39,24 @@ export function RNCheckbox({
             <Animated.View
                 style={[
                     {
-                        width: size,
-                        height: size,
-                        borderRadius: 6,
-                        borderWidth: 2,
-                        alignItems: "center",
+                        width: 42,
+                        height: 24,
+                        borderRadius: 12,
+                        padding: 2,
                         justifyContent: "center",
                     },
-                    boxStyle,
+                    trackStyle,
                 ]}
             >
                 <Animated.View
                     style={[
                         {
-                            width: size * 0.5,
-                            height: size * 0.5,
-                            borderRadius: 3,
+                            width: 20,
+                            height: 20,
+                            borderRadius: 10,
                             backgroundColor: COLORS.background,
                         },
-                        checkStyle,
+                        knobStyle,
                     ]}
                 />
             </Animated.View>

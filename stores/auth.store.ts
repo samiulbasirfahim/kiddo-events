@@ -9,7 +9,6 @@ type AuthStore = {
 export const useAuthStore = create<AuthStore>((set) => ({
     isLoggedIn: false,
     logIn: () => {
-        router.dismissAll();
         router.replace("/(protected)");
         set({ isLoggedIn: true });
     },

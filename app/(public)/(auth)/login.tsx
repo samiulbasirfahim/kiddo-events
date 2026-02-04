@@ -1,10 +1,12 @@
+import { Divider } from "@/components/common/divider";
+import { SocialLogin } from "@/components/common/social-login";
 import { RNLayout } from "@/components/layout/layout";
 import { AppLogo } from "@/components/ui/app-logo";
 import { RNButton } from "@/components/ui/button";
 import { RNInput } from "@/components/ui/input";
 import { RNText } from "@/components/ui/text";
 import { useAuthStore } from "@/stores/auth.store";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { Lock, Mail } from "lucide-react-native";
 import { useState } from "react";
 import { View } from "react-native";
@@ -18,7 +20,7 @@ export default function LoginScreen() {
     });
 
     return (
-        <RNLayout centered>
+        <RNLayout centered includeTopInsets>
             <View style={{ height: 40 }} />
             <AppLogo />
 
@@ -27,6 +29,8 @@ export default function LoginScreen() {
                     placeholder="Enter your Email"
                     leftIcon={Mail}
                     label="Email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                     onChangeText={(x) => setField((prev) => ({ ...prev, email: x }))}
                     value={field.email}
                 />
@@ -39,36 +43,46 @@ export default function LoginScreen() {
                     onChangeText={(x) => setField((prev) => ({ ...prev, password: x }))}
                 />
 
-                <RNButton
-                    size="md"
+                <RNText
+                    variant="body"
                     style={{
-                        paddingHorizontal: 0,
                         alignSelf: "flex-end",
+                        marginTop: 8,
                     }}
-                    variant="link"
                     onPress={() => {
                         router.push("/(public)/forget-password");
                     }}
                 >
                     Forgot Password?
-                </RNButton>
+                </RNText>
 
-                <RNButton style={{ marginTop: 24 }} fullWidth onPress={logIn}>
+                <RNButton fullWidth onPress={logIn}>
                     Login
                 </RNButton>
 
+                <Divider style={{ marginTop: 8 }}>
+                    <RNText>or continue with</RNText>
+                </Divider>
+
+                <SocialLogin />
+
                 <RNText
-                    variant="bodySecondary"
+                    variant="body"
                     style={{
                         textAlign: "center",
                     }}
                 >
-                    or continue with
+                    Don't have an account?{" "}
+                    <RNText
+                        variant="primary"
+                        style={{ fontWeight: "600" }}
+                        onPress={() => {
+                            router.push("/(public)/register");
+                        }}
+                    >
+                        Sign Up
+                    </RNText>
                 </RNText>
-
-                <Link href={"/(others)/request-location-permission"}>
-                    Request Location Screen
-                </Link>
             </View>
         </RNLayout>
     );

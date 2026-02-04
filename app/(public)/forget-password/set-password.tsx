@@ -29,7 +29,7 @@ export default function SetPasswordScreen() {
     }, [field]);
 
     return (
-        <RNLayout shouldntHaveTopInsets>
+        <RNLayout includeHeaderHeight>
             <Stack.Screen
                 options={{
                     title: "Set New Password",

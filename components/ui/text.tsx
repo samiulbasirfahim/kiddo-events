@@ -72,6 +72,19 @@ const typography = StyleSheet.create({
         color: COLORS.primary,
         fontFamily: "ZenDots-Regular",
     },
+    muted: {
+        fontSize: 16,
+        lineHeight: 20,
+        fontWeight: "400",
+        color: COLORS.textSecondary,
+    },
+    subLabel: {
+        color: COLORS.textSecondary,
+        marginTop: 24,
+        lineHeight: 28,
+        fontSize: 18,
+        fontWeight: "600",
+    }
 });
 
 export type TextVariant = keyof typeof typography;

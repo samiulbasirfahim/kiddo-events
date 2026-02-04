@@ -17,7 +17,7 @@ export function useLoadApplication() {
     async function loadApplication() {
         try {
             if (Platform.OS === "android") {
-                NavigationBar.setStyle("dark");
+                NavigationBar.setStyle("light");
             }
 
             setAppReady(true);

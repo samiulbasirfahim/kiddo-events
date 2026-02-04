@@ -14,7 +14,7 @@ export default function OtpEntry() {
     const [otp, setOTP] = useState("");
 
     return (
-        <RNLayout shouldntHaveTopInsets>
+        <RNLayout includeHeaderHeight>
             <Stack.Screen options={{ title: "Verify Code" }} />
 
             <RNText variant="h2">Check Your Email</RNText>

@@ -6,13 +6,29 @@ import { Clock, Eye } from "lucide-react-native";
 
 export default function ProtectedScreen() {
     return (
-        <RNLayout>
+        <RNLayout includeHeaderHeight>
             <Link asChild href={"/(protected)/event-details"} push>
-                <RNButton variant="accent">Event Details Page</RNButton>
+                <RNButton fullWidth variant="accent">
+                    Event Details Page
+                </RNButton>
             </Link>
 
             <Link asChild href={"/(protected)/chats"} push>
-                <RNButton variant="accent">Chat Push</RNButton>
+                <RNButton fullWidth variant="accent">
+                    Chat Push
+                </RNButton>
+            </Link>
+
+            <Link asChild href={"/(protected)/modal"} push>
+                <RNButton fullWidth variant="accent">
+                    MODAL
+                </RNButton>
+            </Link>
+
+            <Link asChild href={"/(protected)/notifications"} push>
+                <RNButton variant="accent" fullWidth>
+                    NOTIFICATIONS
+                </RNButton>
             </Link>
             <RNInput leftIcon={Clock} secureTextEntry label="Password" />
         </RNLayout>
