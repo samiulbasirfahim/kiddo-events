@@ -52,7 +52,7 @@ export function RNLayout({
                 contentContainerStyle={[
                     {
                         flexGrow: 1,
-                        paddingHorizontal: 16,
+                        paddingHorizontal: noPadding ? 0 : 16,
                         paddingTop: noPadding
                             ? 0
                             : includeTopInsets && !includeHeaderHeight

@@ -15,7 +15,7 @@ export default function ProtectedScreen() {
 
             <Link asChild href={"/(protected)/chats"} push>
                 <RNButton fullWidth variant="accent">
-                    Chat Push
+                    Chat Screen
                 </RNButton>
             </Link>
 

@@ -112,7 +112,7 @@ export default function RegisterScreen() {
                         onPress={() => {
                             router.canGoBack()
                                 ? router.back()
-                                : router.push("/(public)/login");
+                                : router.push("/(public)/(auth)/login");
                         }}
                     >
                         Log In
