@@ -1,10 +1,12 @@
 import { FlashList } from "@shopify/flash-list";
 import {
+    AudioModule,
     RecordingPresets,
     useAudioRecorder,
     useAudioRecorderState,
 } from "expo-audio";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+
+import { Keyboard, Platform, Pressable, StyleSheet, View } from "react-native";
 import { COLORS } from "@/constant/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { HEADER_HEIGHT } from "@/constant/header-height";
@@ -14,11 +16,13 @@ import {
     type ChatBubbleProps,
 } from "@/components/common/chat-bubble";
 import { Stack } from "expo-router";
-import { Mic, Paperclip, Send } from "lucide-react-native";
+import { Mic, MicOff, Paperclip, Send } from "lucide-react-native";
 import { TextInput } from "react-native-gesture-handler";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { imagePicker } from "@/lib/image-picker";
-import { useState } from "react";
+import { RNText } from "@/components/ui/text";
+import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
+import { AudioVisualizer } from "@/components/common/audio-visualizer";
 
 const messages: ChatBubbleProps[] = [
     {
@@ -109,14 +113,23 @@ export default function ChatScreen() {
     const { top, bottom } = useSafeAreaInsets();
     const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
     const recorderState = useAudioRecorderState(audioRecorder);
+    const keyboardVisible = useKeyboardVisibility();
 
     const record = async () => {
+        const status = await AudioModule.requestRecordingPermissionsAsync();
+        if (!status.granted) {
+            console.log("Permission to access microphone is required!");
+            return;
+        }
+
         await audioRecorder.prepareToRecordAsync();
         audioRecorder.record();
+        console.log("Recording started");
     };
 
     const stopRecorording = async () => {
         await audioRecorder.stop();
+        console.log("Recording stopped");
     };
 
     const headerHeight = HEADER_HEIGHT + top;
@@ -163,6 +176,8 @@ export default function ChatScreen() {
                 style={{ flex: 1 }}
             >
                 <FlashList
+                    keyboardDismissMode="interactive"
+                    keyboardShouldPersistTaps="handled"
                     style={{ flex: 1 }}
                     contentContainerStyle={{ paddingTop: headerHeight + 16 }}
                     maintainVisibleContentPosition={{
@@ -176,23 +191,44 @@ export default function ChatScreen() {
                     keyExtractor={(item) => item.message.id}
                     renderItem={({ item }) => <ChatBubble {...item} />}
                 />
+
                 <View
                     style={[styles.chatOuterContainer, { paddingBottom: bottom + 16 }]}
                 >
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <View style={styles.chatInnerContainer}>
-                            <Pressable onPress={uploadImage}>
-                                <Paperclip color={COLORS.muted} size={28} />
+                    <View style={styles.chatInnerContainer}>
+                        {keyboardVisible ? null : recorderState.isRecording ? (
+                            <Pressable onPress={stopRecorording}>
+                                <MicOff color={COLORS.background} size={28} />
                             </Pressable>
-                            <TextInput style={styles.chatInput} />
-                            <Pressable onPressIn={record} onPressOut={stopRecorording}>
+                        ) : (
+                            <Pressable onPress={record}>
                                 <Mic color={COLORS.muted} size={28} />
                             </Pressable>
-                        </View>
-                        <Pressable style={styles.sendButton}>
-                            <Send size={28} color={COLORS.background} />
-                        </Pressable>
+                        )}
+                        {!recorderState.isRecording ? (
+                            <>
+                                <TextInput style={styles.chatInput} />
+                                <Pressable onPress={uploadImage}>
+                                    <Paperclip color={COLORS.muted} size={28} />
+                                </Pressable>
+                            </>
+                        ) : (
+                            <View style={styles.recordingContainer}>
+                                <View style={styles.recordPill}>
+                                    <RNText style={{ color: COLORS.background }}>
+                                        {Math.ceil(recorderState.durationMillis / 1000)}s
+                                    </RNText>
+                                </View>
+                                <AudioVisualizer
+                                    isRecording={recorderState.isRecording}
+                                    metering={recorderState.metering ?? -160}
+                                />
+                            </View>
+                        )}
                     </View>
+                    <Pressable style={styles.sendButton}>
+                        <Send size={28} color={COLORS.background} />
+                    </Pressable>
                 </View>
             </KeyboardAvoidingView>
         </View>
@@ -215,6 +251,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     chatOuterContainer: {
+        flexDirection: "row",
         alignItems: "center",
         padding: 8,
         borderTopWidth: 1,
@@ -223,7 +260,7 @@ const styles = StyleSheet.create({
     },
     chatInnerContainer: {
         alignItems: "center",
-        flexDirection: "row",
+        flexDirection: "row-reverse",
         backgroundColor: COLORS.backgroundSecondary,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -231,13 +268,13 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingHorizontal: 8,
         flex: 1,
+        height: 50,
     },
     chatInput: {
         flex: 1,
         padding: 0,
         paddingVertical: 6,
         fontSize: 20,
-        height: 50,
     },
     sendButton: {
         backgroundColor: COLORS.primary,
@@ -247,5 +284,21 @@ const styles = StyleSheet.create({
         alignItems: "center",
         height: 50,
         justifyContent: "center",
+    },
+    recordPill: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: COLORS.primary,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        alignSelf: "flex-start",
+    },
+    recordingContainer: {
+        flex: 1,
+        gap: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "flex-start",
     },
 });

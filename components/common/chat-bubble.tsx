@@ -29,7 +29,6 @@ export function ChatBubble({
                     setImageHeight(IMAGE_WIDTH * ratio);
                 },
                 () => {
-                    // fallback if image size fails
                     setImageHeight(200);
                 },
             );
@@ -61,6 +60,9 @@ export function ChatBubble({
                     sts.bubbleContainer,
                     {
                         backgroundColor: isOwnMessage ? COLORS.primary : COLORS.background,
+                        paddingHorizontal: message.type === "image" ? 1 : 16,
+                        paddingVertical: message.type === "image" ? 1 : 10,
+                        borderRadius: message.type === "image" ? 13 : 24,
                     },
                 ]}
             >
@@ -96,7 +98,5 @@ const sts = StyleSheet.create({
     },
     bubbleContainer: {
         maxWidth: "80%",
-        borderRadius: 24,
-        padding: 12,
     },
 });
