@@ -6,7 +6,7 @@ import {
     useAudioRecorderState,
 } from "expo-audio";
 
-import { Keyboard, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { COLORS } from "@/constant/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { HEADER_HEIGHT } from "@/constant/header-height";
@@ -23,6 +23,9 @@ import { imagePicker } from "@/lib/image-picker";
 import { RNText } from "@/components/ui/text";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { AudioVisualizer } from "@/components/common/audio-visualizer";
+import { useRef, useState } from "react";
+import { Message } from "@/types/chat";
+import { SwipeableProps } from "react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable";
 
 const messages: ChatBubbleProps[] = [
     {
@@ -115,6 +118,18 @@ export default function ChatScreen() {
     const recorderState = useAudioRecorderState(audioRecorder);
     const keyboardVisible = useKeyboardVisibility();
 
+    const openSwipeableRef = useRef<SwipeableProps["ref"] | null>(null);
+    const [replyToId, setReplyToId] = useState<Message["id"] | null>(null);
+
+    const handleSwipeOpen = (id: Message["id"] | null, ref: any) => {
+        if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
+            openSwipeableRef.current.current?.close();
+        }
+
+        openSwipeableRef.current = ref;
+        setReplyToId(id);
+    };
+
     const record = async () => {
         const status = await AudioModule.requestRecordingPermissionsAsync();
         if (!status.granted) {
@@ -189,12 +204,33 @@ export default function ChatScreen() {
                     }}
                     data={messages}
                     keyExtractor={(item) => item.message.id}
-                    renderItem={({ item }) => <ChatBubble {...item} />}
+                    renderItem={({ item }) => (
+                        <ChatBubble onSwipeOpen={handleSwipeOpen} {...item} />
+                    )}
                 />
 
                 <View
                     style={[styles.chatOuterContainer, { paddingBottom: bottom + 16 }]}
                 >
+                    {replyToId ? (
+                        <View
+                            style={{
+                                position: "absolute",
+                                top: -60,
+                                left: 0,
+                                right: 0,
+                                backgroundColor: COLORS.background,
+                                borderWidth: 1,
+                                borderColor: COLORS.border,
+                                borderRadius: 12,
+                                padding: 8,
+                            }}
+                        >
+                            <RNText style={{ color: COLORS.textPrimary }}>
+                                Replying to message ID: {replyToId}
+                            </RNText>
+                        </View>
+                    ) : null}
                     <View style={styles.chatInnerContainer}>
                         {keyboardVisible ? null : recorderState.isRecording ? (
                             <Pressable onPress={stopRecorording}>

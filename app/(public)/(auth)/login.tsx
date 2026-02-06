@@ -12,7 +12,7 @@ import { useState } from "react";
 import { View } from "react-native";
 
 export default function LoginScreen() {
-    const logIn = useAuthStore((x) => x.logIn);
+    const logIn = useAuthStore((state) => state.logIn);
 
     const [field, setField] = useState({
         email: "",
@@ -77,7 +77,7 @@ export default function LoginScreen() {
                         variant="primary"
                         style={{ fontWeight: "600" }}
                         onPress={() => {
-                            router.push("/(public)/register");
+                            router.push("/(public)/(auth)/register");
                         }}
                     >
                         Sign Up

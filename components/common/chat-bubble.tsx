@@ -1,14 +1,21 @@
 import type { Message } from "@/types/chat";
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Dimensions, Image as Img, StyleSheet, View } from "react-native";
 import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
 import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ReplyIcon } from "lucide-react-native";
+import Reanimated, {
+    SharedValue,
+    useAnimatedStyle,
+} from "react-native-reanimated";
 
 export type ChatBubbleProps = {
     message: Message;
     avatarUrl?: string;
     isOwnMessage: boolean;
+    onSwipeOpen?: (id: Message["id"] | null, ref: any) => void;
 };
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const IMAGE_WIDTH = SCREEN_WIDTH * 0.6;
@@ -17,8 +24,10 @@ export function ChatBubble({
     message,
     avatarUrl,
     isOwnMessage,
+    onSwipeOpen,
 }: ChatBubbleProps) {
     const [imageHeight, setImageHeight] = useState<number>(200);
+    const swipeAbleRef = useRef(null);
 
     useEffect(() => {
         if (message.type === "image" && message.file) {
@@ -35,9 +44,39 @@ export function ChatBubble({
         }
     }, [message]);
 
+    function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+        const styles = useAnimatedStyle(() => {
+            return {
+                transform: [
+                    {
+                        translateX: isOwnMessage ? drag.value + 20 : drag.value - 20,
+                    },
+                ],
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100%",
+                // paddingRight: isOwnMessage ? 0 : 12,
+                // paddingLeft: isOwnMessage ? 12 : 0,
+            };
+        });
+
+        return (
+            <Reanimated.View style={styles}>
+                <ReplyIcon size={24} color={COLORS.textPrimary} />
+            </Reanimated.View>
+        );
+    }
+
     return (
-        <View
-            style={[
+        <Swipeable
+            friction={2}
+            ref={swipeAbleRef}
+            overshootRight={true}
+            onSwipeableOpen={() => onSwipeOpen?.(message.id, swipeAbleRef)}
+            onSwipeableClose={() => onSwipeOpen?.(null, null)}
+            renderLeftActions={isOwnMessage ? undefined : RightAction}
+            renderRightActions={isOwnMessage ? RightAction : undefined}
+            childrenContainerStyle={[
                 sts.container,
                 {
                     justifyContent: isOwnMessage ? "flex-end" : "flex-start",
@@ -86,15 +125,15 @@ export function ChatBubble({
                     />
                 )}
             </View>
-        </View>
+        </Swipeable>
     );
 }
 
 const sts = StyleSheet.create({
     container: {
-        flexDirection: "row",
+        paddingHorizontal: 12,
         marginVertical: 4,
-        marginHorizontal: 8,
+        flexDirection: "row",
     },
     bubbleContainer: {
         maxWidth: "80%",
