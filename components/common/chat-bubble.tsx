@@ -1,3 +1,4 @@
+import { formatTimeAMPM } from "@/chat/utils/time";
 import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
 import type { Message } from "@/types/chat";
@@ -106,23 +107,54 @@ export function ChatBubble({
                 ]}
             >
                 {message.type === "text" ? (
-                    <RNText
-                        style={{
-                            color: isOwnMessage ? COLORS.background : COLORS.textPrimary,
-                        }}
-                    >
-                        {message.content}
-                    </RNText>
+                    <>
+                        <RNText
+                            style={{
+                                color: isOwnMessage ? COLORS.background : COLORS.textPrimary,
+                            }}
+                        >
+                            {message.content}
+                        </RNText>
+
+                        <RNText
+                            style={{
+                                color: isOwnMessage
+                                    ? COLORS.background + "CC"
+                                    : COLORS.textPrimary + "CC",
+                                marginTop: 4,
+                                alignSelf: isOwnMessage ? "flex-start" : "flex-end",
+                            }}
+                            variant="caption"
+                        >
+                            {formatTimeAMPM(message.created_at)}
+                        </RNText>
+                    </>
                 ) : (
-                    <Image
-                        source={{ uri: message.file || "" }}
-                        style={{
-                            width: IMAGE_WIDTH,
-                            height: imageHeight,
-                            borderRadius: 12,
-                        }}
-                        contentFit="contain"
-                    />
+                    <>
+                        <Image
+                            source={{ uri: message.file || "" }}
+                            style={{
+                                width: IMAGE_WIDTH,
+                                height: imageHeight,
+                                borderRadius: 12,
+                            }}
+                            contentFit="contain"
+                        />
+
+                        <RNText
+                            style={{
+                                color: isOwnMessage
+                                    ? COLORS.background + "CC"
+                                    : COLORS.textPrimary + "CC",
+                                marginTop: 4,
+                                alignSelf: isOwnMessage ? "flex-start" : "flex-end",
+                                paddingHorizontal: 12,
+                            }}
+                            variant="caption"
+                        >
+                            {formatTimeAMPM(message.created_at)}
+                        </RNText>
+                    </>
                 )}
             </View>
         </Swipeable>
