@@ -1,11 +1,11 @@
-import type { Message } from "@/types/chat";
-import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import { Dimensions, Image as Img, StyleSheet, View } from "react-native";
 import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
+import type { Message } from "@/types/chat";
 import { Image } from "expo-image";
-import { useEffect, useRef, useState } from "react";
 import { ReplyIcon } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
+import { Dimensions, Image as Img, StyleSheet, View } from "react-native";
+import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, {
     SharedValue,
     useAnimatedStyle,
@@ -15,7 +15,7 @@ export type ChatBubbleProps = {
     message: Message;
     avatarUrl?: string;
     isOwnMessage: boolean;
-    onSwipeOpen?: (id: Message["id"] | null, ref: any) => void;
+    onSwipeOpen?: (message: Message | null, ref: any) => void;
 };
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const IMAGE_WIDTH = SCREEN_WIDTH * 0.6;
@@ -72,8 +72,8 @@ export function ChatBubble({
             friction={2}
             ref={swipeAbleRef}
             overshootRight={true}
-            onSwipeableOpen={() => onSwipeOpen?.(message.id, swipeAbleRef)}
-            onSwipeableClose={() => onSwipeOpen?.(null, null)}
+            overshootLeft={true}
+            onSwipeableWillOpen={() => onSwipeOpen?.(message, swipeAbleRef)}
             renderLeftActions={isOwnMessage ? undefined : RightAction}
             renderRightActions={isOwnMessage ? RightAction : undefined}
             childrenContainerStyle={[

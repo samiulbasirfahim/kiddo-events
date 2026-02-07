@@ -1,4 +1,4 @@
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, FlashListRef } from "@shopify/flash-list";
 import {
     AudioModule,
     RecordingPresets,
@@ -6,26 +6,37 @@ import {
     useAudioRecorderState,
 } from "expo-audio";
 
-import { Platform, Pressable, StyleSheet, View } from "react-native";
-import { COLORS } from "@/constant/colors";
-import { LinearGradient } from "expo-linear-gradient";
-import { HEADER_HEIGHT } from "@/constant/header-height";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AudioVisualizer } from "@/components/common/audio-visualizer";
 import {
     ChatBubble,
     type ChatBubbleProps,
 } from "@/components/common/chat-bubble";
-import { Stack } from "expo-router";
-import { Mic, MicOff, Paperclip, Send } from "lucide-react-native";
-import { TextInput } from "react-native-gesture-handler";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
-import { imagePicker } from "@/lib/image-picker";
 import { RNText } from "@/components/ui/text";
+import { COLORS } from "@/constant/colors";
+import { HEADER_HEIGHT } from "@/constant/header-height";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
-import { AudioVisualizer } from "@/components/common/audio-visualizer";
-import { useRef, useState } from "react";
+import { imagePicker } from "@/lib/image-picker";
 import { Message } from "@/types/chat";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { Stack } from "expo-router";
+import {
+    ArrowDown,
+    ArrowLeft,
+    EllipsisVertical,
+    Mic,
+    MicOff,
+    Paperclip,
+    Send,
+    X,
+} from "lucide-react-native";
+import { useRef, useState } from "react";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { TextInput } from "react-native-gesture-handler";
 import { SwipeableProps } from "react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import Animated, { FadeInUp, FadeOutDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const messages: ChatBubbleProps[] = [
     {
@@ -43,7 +54,111 @@ const messages: ChatBubbleProps[] = [
     },
     {
         message: {
+            id: "1-1",
+            content: "Hello!",
+            sender: "user1",
+            created_at: new Date("2024-06-01T10:00:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: false,
+        avatarUrl: "https://example.com/avatar1.png",
+    },
+    {
+        message: {
             id: "2",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-1",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-2",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-3",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-4",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-5",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-6",
+            content: "Hi there!",
+            sender: "user2",
+            created_at: new Date("2024-06-01T10:01:00Z"),
+            type: "text",
+            file: null,
+            room: "room1",
+        },
+        isOwnMessage: true,
+        avatarUrl: "https://example.com/avatar2.png",
+    },
+    {
+        message: {
+            id: "2-7",
             content: "Hi there!",
             sender: "user2",
             created_at: new Date("2024-06-01T10:01:00Z"),
@@ -108,7 +223,6 @@ const messages: ChatBubbleProps[] = [
             room: "room1",
         },
         isOwnMessage: false,
-        avatarUrl: "https://example.com/avatar1.png",
     },
 ];
 
@@ -119,15 +233,32 @@ export default function ChatScreen() {
     const keyboardVisible = useKeyboardVisibility();
 
     const openSwipeableRef = useRef<SwipeableProps["ref"] | null>(null);
-    const [replyToId, setReplyToId] = useState<Message["id"] | null>(null);
+    const scrollRef = useRef<FlashListRef<ChatBubbleProps>>(null);
+    const inputRef = useRef<TextInput>(null);
 
-    const handleSwipeOpen = (id: Message["id"] | null, ref: any) => {
-        if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
+    const [replyToId, setReplyToId] = useState<Message | null>(null);
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+    const handleSwipeOpen = (message: Message | null, ref: any) => {
+        // Close previous swipeable if opening a new one
+        if (ref && openSwipeableRef.current && openSwipeableRef.current !== ref) {
             openSwipeableRef.current.current?.close();
         }
 
-        openSwipeableRef.current = ref;
-        setReplyToId(id);
+        // When opening a swipeable (ref is provided)
+        if (ref && message) {
+            inputRef.current?.focus();
+            openSwipeableRef.current = ref;
+            setReplyToId(message);
+        }
+    };
+
+    const clearReply = () => {
+        if (openSwipeableRef.current) {
+            openSwipeableRef.current.current?.close();
+        }
+        openSwipeableRef.current = null;
+        setReplyToId(null);
     };
 
     const record = async () => {
@@ -174,7 +305,44 @@ export default function ChatScreen() {
                         height: headerHeight,
                     },
                 ]}
-            />
+            >
+                <Pressable
+                    style={{
+                        paddingHorizontal: 14,
+                        height: HEADER_HEIGHT,
+                        justifyContent: "center",
+                    }}
+                    onPress={() => { }}
+                >
+                    <ArrowLeft size={24} color={COLORS.textPrimary} />
+                </Pressable>
+
+                <View
+                    style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        marginRight: 10,
+
+                        backgroundColor: COLORS.primary,
+                    }}
+                />
+                <View>
+                    <RNText variant="bodyBold">Alex Johnson</RNText>
+                    <RNText variant="caption">Active now</RNText>
+                </View>
+
+                <Pressable
+                    style={{
+                        marginLeft: "auto",
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        justifyContent: "center",
+                    }}
+                >
+                    <EllipsisVertical />
+                </Pressable>
+            </View>
             <LinearGradient
                 colors={["#DDD9FF", "#EDEBFE", "#D5D0FD"]}
                 start={{ x: 0, y: 0 }}
@@ -190,14 +358,55 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={-bottom}
                 style={{ flex: 1 }}
             >
+                {showScrollToBottom && (
+                    <Animated.View
+                        entering={FadeInUp.duration(100)}
+                        exiting={FadeOutDown.duration(100)}
+                        style={{
+                            position: "absolute",
+                            bottom: 160,
+                            right: 20,
+                            zIndex: 1,
+                        }}
+                    >
+                        <Pressable
+                            style={{
+                                padding: 6,
+                                borderWidth: 3,
+                                borderColor: COLORS.primary,
+                                borderRadius: 9999,
+                                backgroundColor: COLORS.background,
+                            }}
+                            onPress={() => {
+                                scrollRef.current?.scrollToEnd({
+                                    animated: true,
+                                });
+                                setShowScrollToBottom(false);
+                            }}
+                        >
+                            <ArrowDown size={34} color={COLORS.primary} />
+                        </Pressable>
+                    </Animated.View>
+                )}
                 <FlashList
+                    ref={scrollRef}
                     keyboardDismissMode="interactive"
                     keyboardShouldPersistTaps="handled"
+                    onScroll={(event) => {
+                        const {
+                            contentOffset: { y },
+                            contentSize: { height: contentHeight },
+                            layoutMeasurement: { height: layoutHeight },
+                        } = event.nativeEvent;
+                        const distanceFromBottom = contentHeight - (y + layoutHeight);
+                        setShowScrollToBottom(distanceFromBottom > 100);
+                    }}
                     style={{ flex: 1 }}
                     contentContainerStyle={{ paddingTop: headerHeight + 16 }}
                     maintainVisibleContentPosition={{
                         autoscrollToBottomThreshold: 0.2,
                         startRenderingFromBottom: true,
+                        animateAutoScrollToBottom: true,
                     }}
                     onStartReached={() => {
                         console.log("start reached");
@@ -209,28 +418,65 @@ export default function ChatScreen() {
                     )}
                 />
 
+                {replyToId && (
+                    <Animated.View
+                        entering={FadeInUp.duration(200)}
+                        exiting={FadeOutDown.duration(200)}
+                        style={styles.replyContainer}
+                    >
+                        <View
+                            style={{
+                                width: "90%",
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}
+                        >
+                            <View style={styles.replyInner}>
+                                <RNText variant="label">
+                                    Replying to{" "}
+                                    {replyToId.sender === "user1" ? "Alex Johnson" : "Yourself"}
+                                </RNText>
+                                {replyToId.type === "text" ? (
+                                    <RNText numberOfLines={1} variant="caption">
+                                        {replyToId.content}
+                                    </RNText>
+                                ) : (
+                                    <RNText variant="caption" numberOfLines={1}>
+                                        Image
+                                    </RNText>
+                                )}
+                            </View>
+                            <View style={{ marginLeft: "auto", paddingRight: 12 }}>
+                                {replyToId.type === "image" && (
+                                    <Image
+                                        source={{
+                                            uri: replyToId.file!,
+                                        }}
+                                        style={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 6,
+                                        }}
+                                        contentFit="contain"
+                                    />
+                                )}
+                            </View>
+                        </View>
+
+                        <Pressable
+                            onPress={clearReply}
+                            style={{
+                                padding: 4,
+                                flex: 1,
+                            }}
+                        >
+                            <X size={20} style={styles.replyClose} />
+                        </Pressable>
+                    </Animated.View>
+                )}
                 <View
                     style={[styles.chatOuterContainer, { paddingBottom: bottom + 16 }]}
                 >
-                    {replyToId ? (
-                        <View
-                            style={{
-                                position: "absolute",
-                                top: -60,
-                                left: 0,
-                                right: 0,
-                                backgroundColor: COLORS.background,
-                                borderWidth: 1,
-                                borderColor: COLORS.border,
-                                borderRadius: 12,
-                                padding: 8,
-                            }}
-                        >
-                            <RNText style={{ color: COLORS.textPrimary }}>
-                                Replying to message ID: {replyToId}
-                            </RNText>
-                        </View>
-                    ) : null}
                     <View style={styles.chatInnerContainer}>
                         {keyboardVisible ? null : recorderState.isRecording ? (
                             <Pressable onPress={stopRecorording}>
@@ -243,7 +489,7 @@ export default function ChatScreen() {
                         )}
                         {!recorderState.isRecording ? (
                             <>
-                                <TextInput style={styles.chatInput} />
+                                <TextInput ref={inputRef} style={styles.chatInput} />
                                 <Pressable onPress={uploadImage}>
                                     <Paperclip color={COLORS.muted} size={28} />
                                 </Pressable>
@@ -277,6 +523,11 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.backgroundSecondary,
     },
     topBar: {
+        justifyContent: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
         zIndex: 1,
         width: "100%",
         position: "absolute",
@@ -284,7 +535,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         backgroundColor: COLORS.background,
-        justifyContent: "center",
     },
     chatOuterContainer: {
         flexDirection: "row",
@@ -336,5 +586,30 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-start",
+    },
+
+    replyContainer: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: COLORS.background,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.border,
+    },
+
+    replyInner: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+
+    replyText: {
+        color: COLORS.muted,
+    },
+
+    replyClose: {
+        fontSize: 18,
+        color: COLORS.primary,
+        paddingHorizontal: 8,
     },
 });
