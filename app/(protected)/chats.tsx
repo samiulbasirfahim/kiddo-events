@@ -360,8 +360,8 @@ export default function ChatScreen() {
             >
                 {showScrollToBottom && (
                     <Animated.View
-                        entering={FadeInUp.duration(100)}
-                        exiting={FadeOutDown.duration(100)}
+                        entering={FadeInUp.duration(200)}
+                        exiting={FadeOutDown.duration(200)}
                         style={{
                             position: "absolute",
                             bottom: 160,
