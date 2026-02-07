@@ -1,16 +1,17 @@
-import { formatTimeAMPM } from "@/chat/utils/time";
-import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
 import type { Message } from "@/types/chat";
-import { Image } from "expo-image";
 import { ReplyIcon } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
-import { Dimensions, Image as Img, StyleSheet, View } from "react-native";
+import { memo, useCallback, useMemo, useRef } from "react";
+import { StyleSheet, View } from "react-native";
 import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, {
     SharedValue,
     useAnimatedStyle,
 } from "react-native-reanimated";
+import { ImageBubble } from "./chat-bubbles/image-bubble";
+import { ReplyBubble } from "./chat-bubbles/reply-bubble";
+import { TextBubble } from "./chat-bubbles/text-bubble";
+import { VoiceBubble } from "./chat-bubbles/voice-bubble";
 
 export type ChatBubbleProps = {
     message: Message;
@@ -18,34 +19,20 @@ export type ChatBubbleProps = {
     isOwnMessage: boolean;
     onSwipeOpen?: (message: Message | null, ref: any) => void;
 };
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const IMAGE_WIDTH = SCREEN_WIDTH * 0.6;
 
-export function ChatBubble({
+export const ChatBubble = memo(function ChatBubble({
     message,
     avatarUrl,
     isOwnMessage,
     onSwipeOpen,
 }: ChatBubbleProps) {
-    const [imageHeight, setImageHeight] = useState<number>(200);
     const swipeAbleRef = useRef(null);
-
-    useEffect(() => {
-        if (message.type === "image" && message.file) {
-            Img.getSize(
-                message.file,
-                (width, height) => {
-                    const ratio = height / width;
-                    setImageHeight(IMAGE_WIDTH * ratio);
-                },
-                () => {
-                    setImageHeight(200);
-                },
-            );
-        }
-    }, [message]);
-
-    function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+    
+    const handleSwipeOpen = useCallback(() => {
+        onSwipeOpen?.(message, swipeAbleRef);
+    }, [message, onSwipeOpen]);
+    
+    const RightAction = useCallback((prog: SharedValue<number>, drag: SharedValue<number>) => {
         const styles = useAnimatedStyle(() => {
             return {
                 transform: [
@@ -53,11 +40,9 @@ export function ChatBubble({
                         translateX: isOwnMessage ? drag.value + 20 : drag.value - 20,
                     },
                 ],
-                justifyContent: "center",
-                alignItems: "center",
+                justifyContent: "center" as const,
+                alignItems: "center" as const,
                 height: "100%",
-                // paddingRight: isOwnMessage ? 0 : 12,
-                // paddingLeft: isOwnMessage ? 12 : 0,
             };
         });
 
@@ -66,7 +51,23 @@ export function ChatBubble({
                 <ReplyIcon size={24} color={COLORS.textPrimary} />
             </Reanimated.View>
         );
-    }
+    }, [isOwnMessage]);
+
+    // Memoize bubble styles
+    const bubbleStyle = useMemo(() => [
+        sts.bubbleContainer,
+        {
+            backgroundColor: isOwnMessage ? COLORS.primary : COLORS.background,
+            paddingHorizontal: message.type === "image" ? 1 : 16,
+            paddingVertical: message.type === "image" ? 1 : 10,
+            borderRadius: message.type === "image" ? 13 : 24,
+        },
+    ], [isOwnMessage, message.type]);
+    
+    const containerStyle = useMemo(() => [
+        sts.container,
+        { justifyContent: isOwnMessage ? ("flex-end" as const) : ("flex-start" as const) }
+    ], [isOwnMessage]);
 
     return (
         <Swipeable
@@ -74,92 +75,44 @@ export function ChatBubble({
             ref={swipeAbleRef}
             overshootRight={true}
             overshootLeft={true}
-            onSwipeableWillOpen={() => onSwipeOpen?.(message, swipeAbleRef)}
+            onSwipeableWillOpen={handleSwipeOpen}
             renderLeftActions={isOwnMessage ? undefined : RightAction}
             renderRightActions={isOwnMessage ? RightAction : undefined}
-            childrenContainerStyle={[
-                sts.container,
-                {
-                    justifyContent: isOwnMessage ? "flex-end" : "flex-start",
-                },
-            ]}
+            childrenContainerStyle={containerStyle}
         >
             {!isOwnMessage && avatarUrl ? (
-                <View
-                    style={{
-                        width: 35,
-                        height: 35,
-                        borderRadius: 20,
-                        marginRight: 6,
-                        backgroundColor: COLORS.primary,
-                    }}
-                ></View>
+                <View style={sts.avatar} />
             ) : null}
-            <View
-                style={[
-                    sts.bubbleContainer,
-                    {
-                        backgroundColor: isOwnMessage ? COLORS.primary : COLORS.background,
-                        paddingHorizontal: message.type === "image" ? 1 : 16,
-                        paddingVertical: message.type === "image" ? 1 : 10,
-                        borderRadius: message.type === "image" ? 13 : 24,
-                    },
-                ]}
-            >
-                {message.type === "text" ? (
-                    <>
-                        <RNText
-                            style={{
-                                color: isOwnMessage ? COLORS.background : COLORS.textPrimary,
-                            }}
-                        >
-                            {message.content}
-                        </RNText>
-
-                        <RNText
-                            style={{
-                                color: isOwnMessage
-                                    ? COLORS.background + "CC"
-                                    : COLORS.textPrimary + "CC",
-                                marginTop: 4,
-                                alignSelf: isOwnMessage ? "flex-start" : "flex-end",
-                            }}
-                            variant="caption"
-                        >
-                            {formatTimeAMPM(message.created_at)}
-                        </RNText>
-                    </>
-                ) : (
-                    <>
-                        <Image
-                            source={{ uri: message.file || "" }}
-                            style={{
-                                width: IMAGE_WIDTH,
-                                height: imageHeight,
-                                borderRadius: 12,
-                            }}
-                            contentFit="contain"
-                        />
-
-                        <RNText
-                            style={{
-                                color: isOwnMessage
-                                    ? COLORS.background + "CC"
-                                    : COLORS.textPrimary + "CC",
-                                marginTop: 4,
-                                alignSelf: isOwnMessage ? "flex-start" : "flex-end",
-                                paddingHorizontal: 12,
-                            }}
-                            variant="caption"
-                        >
-                            {formatTimeAMPM(message.created_at)}
-                        </RNText>
-                    </>
+            <View style={bubbleStyle}>
+                {message.reply && (
+                    <View style={message.type === "image" ? sts.replyPaddingImage : undefined}>
+                        <ReplyBubble reply={message.reply} isOwnMessage={isOwnMessage} />
+                    </View>
                 )}
+
+                {message.type === "text" ? (
+                    <TextBubble
+                        content={message.content}
+                        timestamp={message.created_at}
+                        isOwnMessage={isOwnMessage}
+                    />
+                ) : message.type === "image" ? (
+                    <ImageBubble
+                        imageUrl={message.file || ""}
+                        timestamp={message.created_at}
+                        isOwnMessage={isOwnMessage}
+                    />
+                ) : message.type === "voice" ? (
+                    <VoiceBubble
+                        audioUrl={message.file || ""}
+                        timestamp={message.created_at}
+                        isOwnMessage={isOwnMessage}
+                    />
+                ) : null}
             </View>
         </Swipeable>
     );
-}
+});
 
 const sts = StyleSheet.create({
     container: {
@@ -169,5 +122,16 @@ const sts = StyleSheet.create({
     },
     bubbleContainer: {
         maxWidth: "80%",
+    },
+    avatar: {
+        width: 35,
+        height: 35,
+        borderRadius: 20,
+        marginRight: 6,
+        backgroundColor: COLORS.primary,
+    },
+    replyPaddingImage: {
+        paddingHorizontal: 10,
+        paddingTop: 10,
     },
 });

@@ -6,4 +6,11 @@ export type Message = {
     created_at: Date;
     room: string;
     sender: string;
+    reply: {
+        id: string;
+        content: string;
+        type: "text" | "image" | "voice";
+        file: string | null;
+        sender: string;
+    } | null;
 };
