@@ -3,22 +3,25 @@ import { COLORS } from "@/constant/colors";
 import type { Message } from "@/types/chat";
 import { Image } from "expo-image";
 import { memo } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 type ReplyBubbleProps = {
     reply: Message["reply"];
     isOwnMessage: boolean;
+    onPress?: () => void;
 };
 
 export const ReplyBubble = memo(function ReplyBubble({ 
     reply, 
-    isOwnMessage 
+    isOwnMessage,
+    onPress
 }: ReplyBubbleProps) {
     if (!reply) return null;
 
     return (
-        <View
-            style={[
+        <Pressable onPress={onPress} disabled={!onPress}>
+            <View
+                style={[
                 styles.replyContainer,
                 {
                     backgroundColor: isOwnMessage
@@ -62,6 +65,7 @@ export const ReplyBubble = memo(function ReplyBubble({
                 </RNText>
             </View>
         </View>
+        </Pressable>
     );
 });
 

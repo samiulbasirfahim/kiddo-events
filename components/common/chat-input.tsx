@@ -14,7 +14,7 @@ import {
 } from "expo-audio";
 
 import { Image } from "expo-image";
-import { Mic, MicOff, Paperclip, Pause, Play, Send, X } from "lucide-react-native";
+import { Mic, MicOff, Paperclip, Pause, Play, Send, StopCircle, X } from "lucide-react-native";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import Animated, { FadeInUp, FadeOutDown } from "react-native-reanimated";
@@ -314,7 +314,7 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                     <View style={styles.chatInnerContainer}>
                         {keyboardVisible ? null : isRecording ? (
                             <Pressable onPress={stopRecording}>
-                                <MicOff color={COLORS.background} size={28} />
+                                <StopCircle color={COLORS.background} size={28} />
                             </Pressable>
                         ) : audioUri ? (
                             <Pressable onPress={cancelRecording}>

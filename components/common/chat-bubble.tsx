@@ -18,6 +18,8 @@ export type ChatBubbleProps = {
     avatarUrl?: string;
     isOwnMessage: boolean;
     onSwipeOpen?: (message: Message | null, ref: any) => void;
+    onReplyPress?: (messageId: string) => void;
+    isHighlighted?: boolean;
 };
 
 export const ChatBubble = memo(function ChatBubble({
@@ -25,6 +27,8 @@ export const ChatBubble = memo(function ChatBubble({
     avatarUrl,
     isOwnMessage,
     onSwipeOpen,
+    onReplyPress,
+    isHighlighted = false,
 }: ChatBubbleProps) {
     const swipeAbleRef = useRef(null);
     
@@ -83,10 +87,14 @@ export const ChatBubble = memo(function ChatBubble({
             {!isOwnMessage && avatarUrl ? (
                 <View style={sts.avatar} />
             ) : null}
-            <View style={bubbleStyle}>
+            <View style={[bubbleStyle, isHighlighted && sts.highlighted]}>
                 {message.reply && (
                     <View style={message.type === "image" ? sts.replyPaddingImage : undefined}>
-                        <ReplyBubble reply={message.reply} isOwnMessage={isOwnMessage} />
+                        <ReplyBubble 
+                            reply={message.reply} 
+                            isOwnMessage={isOwnMessage}
+                            onPress={() => onReplyPress?.(message.reply!.id)}
+                        />
                     </View>
                 )}
 
@@ -133,5 +141,8 @@ const sts = StyleSheet.create({
     replyPaddingImage: {
         paddingHorizontal: 10,
         paddingTop: 10,
+    },
+    highlighted: {
+        backgroundColor: COLORS.primary + "22",
     },
 });
