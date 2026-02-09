@@ -93,19 +93,24 @@ export default function ChatScreen() {
     }, []);
 
     async function fetchPreviousMessages() {
-        console.log("Fetching previous messages...");
+        if (initialLoad === false) {
+            console.log("Initial load not completed yet, skipping fetch.");
+            return;
+        }
+        if (isLoadingJump) {
+            console.log("Already loading messages, skipping fetch.");
+            return;
+        }
         if (messages.length === 0) return;
-        const previousMessages: Message[] = await fetchMessages(messages[
-            messages.length - 1
-        ].id);
-        const newMessages = [...previousMessages, ...messages];
-
-        console.log(
-            "New set of messages:",
-            newMessages.map((m) => m.id),
+        setIsLoadingJump(true);
+        console.log("Fetching previous messages...");
+        const previousMessages: Message[] = await fetchMessages(
+            messages[messages.length - 1].id,
         );
+        const newMessages = [...messages, ...previousMessages];
 
-        // setMessages(newMessages);
+        setMessages(newMessages);
+        setIsLoadingJump(false);
     }
 
     const handleMenuPress = useCallback(() => { }, []);
@@ -134,10 +139,10 @@ export default function ChatScreen() {
                     break;
                 }
 
-                currentMessages = [...previousMessages, ...currentMessages];
+                currentMessages = [...currentMessages, ...previousMessages];
 
                 console.log(
-                    "New set of messages:",
+                    "New set of messages (jump):",
                     currentMessages.map((m) => m.id),
                 );
 
@@ -168,7 +173,7 @@ export default function ChatScreen() {
 
     const handleScroll = useCallback((event: any) => {
         const offsetY = event.nativeEvent.contentOffset.y;
-        setShowScrollToBottom(offsetY > 200);
+        setShowScrollToBottom(offsetY > 400);
     }, []);
 
     const renderItem = useCallback(
@@ -228,7 +233,7 @@ export default function ChatScreen() {
                 <ScrollToBottomButton
                     visible={showScrollToBottom}
                     onPress={handleScrollToBottom}
-                    bottom={bottom + 100}
+                    bottom={bottom + 140}
                 />
 
                 <FlatList
@@ -241,7 +246,7 @@ export default function ChatScreen() {
                     inverted
                     onScroll={handleScroll}
                     scrollEventThrottle={16}
-                    onStartReached={fetchPreviousMessages}
+                    onEndReached={fetchPreviousMessages}
                     onEndReachedThreshold={0.4}
                     onScrollToIndexFailed={(info) => {
                         setTimeout(() => {

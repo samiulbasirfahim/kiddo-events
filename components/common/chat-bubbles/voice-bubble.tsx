@@ -7,7 +7,7 @@ import {
     useAudioSampleListener,
 } from "expo-audio";
 import { Pause, Play } from "lucide-react-native";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AudioVisualizer } from "../audio-visualizer";
 
@@ -78,12 +78,6 @@ export const VoiceBubble = memo(function VoiceBubble({
                 const rms = Math.sqrt(sumSquares / channel.frames.length);
                 const dbfs = rms > 0 ? 20 * Math.log10(rms) : -160;
 
-                console.log(
-                    "Audio Sample RMS:",
-                    rms.toFixed(5),
-                    "dBFS:",
-                    dbfs.toFixed(2),
-                );
                 setMetering(dbfs);
             },
             [player.playing],
@@ -144,6 +138,21 @@ export const VoiceBubble = memo(function VoiceBubble({
 
     const totalDuration = duration;
 
+    const durationTextStyle = useMemo(() => ([
+        voiceStyles.durationText,
+        {
+            color: isOwnMessage ? COLORS.background + "DD" : COLORS.textPrimary + "DD",
+        }
+    ]), [isOwnMessage]);
+
+    const timestampStyle = useMemo(() => ([
+        voiceStyles.timestamp,
+        {
+            color: isOwnMessage ? COLORS.background + "CC" : COLORS.textPrimary + "CC",
+            alignSelf: isOwnMessage ? "flex-start" as const : "flex-end" as const,
+        }
+    ]), [isOwnMessage]);
+
     return (
         <View style={styles.container}>
             <View style={styles.contentContainer}>
@@ -154,12 +163,7 @@ export const VoiceBubble = memo(function VoiceBubble({
                         usePrimaryBg={!isOwnMessage}
                     />
                     <RNText
-                        style={{
-                            color: isOwnMessage
-                                ? COLORS.background + "DD"
-                                : COLORS.textPrimary + "DD",
-                            marginVertical: 4,
-                        }}
+                        style={durationTextStyle}
                         variant="caption"
                     >
                         {isLoading
@@ -195,13 +199,7 @@ export const VoiceBubble = memo(function VoiceBubble({
             </View>
 
             <RNText
-                style={{
-                    color: isOwnMessage
-                        ? COLORS.background + "CC"
-                        : COLORS.textPrimary + "CC",
-                    marginTop: 4,
-                    alignSelf: isOwnMessage ? "flex-start" : "flex-end",
-                }}
+                style={timestampStyle}
                 variant="caption"
             >
                 {formatTimeAMPM(timestamp)}
@@ -230,5 +228,14 @@ const styles = StyleSheet.create({
     },
     playButtonDisabled: {
         opacity: 0.5,
+    },
+});
+
+const voiceStyles = StyleSheet.create({
+    durationText: {
+        marginVertical: 4,
+    },
+    timestamp: {
+        marginTop: 4,
     },
 });

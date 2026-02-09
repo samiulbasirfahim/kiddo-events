@@ -8,10 +8,10 @@ import Reanimated, {
     SharedValue,
     useAnimatedStyle,
 } from "react-native-reanimated";
+import { VoiceBubble } from "./chat-bubbles";
 import { ImageBubble } from "./chat-bubbles/image-bubble";
 import { ReplyBubble } from "./chat-bubbles/reply-bubble";
 import { TextBubble } from "./chat-bubbles/text-bubble";
-import { VoiceBubble } from "./chat-bubbles/voice-bubble";
 
 export type ChatBubbleProps = {
     message: Message;
@@ -20,6 +20,28 @@ export type ChatBubbleProps = {
     onSwipeOpen?: (message: Message | null, ref: any) => void;
     onReplyPress?: (messageId: string) => void;
     isHighlighted?: boolean;
+};
+
+// Move RightAction outside component for better performance
+const RightAction = (isOwnMessage: boolean) => (prog: SharedValue<number>, drag: SharedValue<number>) => {
+    const styles = useAnimatedStyle(() => {
+        return {
+            transform: [
+                {
+                    translateX: isOwnMessage ? drag.value + 20 : drag.value - 20,
+                },
+            ],
+            justifyContent: "center" as const,
+            alignItems: "center" as const,
+            height: "100%",
+        };
+    });
+
+    return (
+        <Reanimated.View style={styles}>
+            <ReplyIcon size={24} color={COLORS.textPrimary} />
+        </Reanimated.View>
+    );
 };
 
 export const ChatBubble = memo(function ChatBubble({
@@ -36,26 +58,7 @@ export const ChatBubble = memo(function ChatBubble({
         onSwipeOpen?.(message, swipeAbleRef);
     }, [message, onSwipeOpen]);
     
-    const RightAction = useCallback((prog: SharedValue<number>, drag: SharedValue<number>) => {
-        const styles = useAnimatedStyle(() => {
-            return {
-                transform: [
-                    {
-                        translateX: isOwnMessage ? drag.value + 20 : drag.value - 20,
-                    },
-                ],
-                justifyContent: "center" as const,
-                alignItems: "center" as const,
-                height: "100%",
-            };
-        });
-
-        return (
-            <Reanimated.View style={styles}>
-                <ReplyIcon size={24} color={COLORS.textPrimary} />
-            </Reanimated.View>
-        );
-    }, [isOwnMessage]);
+    const rightAction = useMemo(() => RightAction(isOwnMessage), [isOwnMessage]);
 
     // Memoize bubble styles
     const bubbleStyle = useMemo(() => [
@@ -75,13 +78,16 @@ export const ChatBubble = memo(function ChatBubble({
 
     return (
         <Swipeable
-            friction={2}
+            friction={4}
             ref={swipeAbleRef}
-            overshootRight={true}
-            overshootLeft={true}
+            overshootRight={false}
+            overshootLeft={false}
+            enableTrackpadTwoFingerGesture={false}
+            rightThreshold={40}
+            leftThreshold={40}
             onSwipeableWillOpen={handleSwipeOpen}
-            renderLeftActions={isOwnMessage ? undefined : RightAction}
-            renderRightActions={isOwnMessage ? RightAction : undefined}
+            renderLeftActions={isOwnMessage ? undefined : rightAction}
+            renderRightActions={isOwnMessage ? rightAction : undefined}
             childrenContainerStyle={containerStyle}
         >
             {!isOwnMessage && avatarUrl ? (

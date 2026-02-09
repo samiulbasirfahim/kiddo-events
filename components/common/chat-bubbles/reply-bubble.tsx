@@ -2,7 +2,7 @@ import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
 import type { Message } from "@/types/chat";
 import { Image } from "expo-image";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 type ReplyBubbleProps = {
@@ -18,19 +18,31 @@ export const ReplyBubble = memo(function ReplyBubble({
 }: ReplyBubbleProps) {
     if (!reply) return null;
 
+    const containerStyle = useMemo(() => ([
+        styles.replyContainer,
+        {
+            backgroundColor: isOwnMessage ? COLORS.background + "20" : COLORS.primary + "20",
+            borderLeftColor: isOwnMessage ? COLORS.background : COLORS.primary,
+        },
+    ]), [isOwnMessage]);
+
+    const labelStyle = useMemo(() => ([
+        styles.replyLabel,
+        {
+            color: isOwnMessage ? COLORS.background + "DD" : COLORS.textPrimary + "DD",
+        },
+    ]), [isOwnMessage]);
+
+    const contentStyle = useMemo(() => ([
+        styles.replyContent,
+        {
+            color: isOwnMessage ? COLORS.background : COLORS.textPrimary,
+        },
+    ]), [isOwnMessage]);
+
     return (
         <Pressable onPress={onPress} disabled={!onPress}>
-            <View
-                style={[
-                styles.replyContainer,
-                {
-                    backgroundColor: isOwnMessage
-                        ? COLORS.background + "20"
-                        : COLORS.primary + "20",
-                    borderLeftColor: isOwnMessage ? COLORS.background : COLORS.primary,
-                },
-            ]}
-        >
+            <View style={containerStyle}>
             {reply.type === "image" && reply.file ? (
                 <Image
                     source={{ uri: reply.file }}
@@ -42,22 +54,13 @@ export const ReplyBubble = memo(function ReplyBubble({
             ) : null}
             <View style={styles.replyTextContainer}>
                 <RNText
-                    style={[
-                        styles.replyLabel,
-                        {
-                            color: isOwnMessage
-                                ? COLORS.background + "DD"
-                                : COLORS.textPrimary + "DD",
-                        },
-                    ]}
+                    style={labelStyle}
                     variant="caption"
                 >
                     Replying to {reply.sender}
                 </RNText>
                 <RNText
-                    style={{
-                        color: isOwnMessage ? COLORS.background : COLORS.textPrimary,
-                    }}
+                    style={contentStyle}
                     variant="caption"
                     numberOfLines={2}
                 >
@@ -92,4 +95,5 @@ const styles = StyleSheet.create({
     replyLabel: {
         fontWeight: "600",
     },
+    replyContent: {},
 });

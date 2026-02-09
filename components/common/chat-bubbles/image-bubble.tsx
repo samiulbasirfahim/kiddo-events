@@ -2,8 +2,8 @@ import { formatTimeAMPM } from "@/chat/utils/time";
 import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
 import { Image } from "expo-image";
-import { memo, useState } from "react";
-import { Dimensions } from "react-native";
+import { memo, useMemo, useState } from "react";
+import { Dimensions, StyleSheet } from "react-native";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const IMAGE_WIDTH = SCREEN_WIDTH * 0.6;
@@ -30,15 +30,24 @@ export const ImageBubble = memo(function ImageBubble({
         }
     };
 
+    const imageStyle = useMemo(() => ([
+        styles.image,
+        { height: imageHeight }
+    ]), [imageHeight]);
+
+    const timestampStyle = useMemo(() => ([
+        styles.timestamp,
+        {
+            color: isOwnMessage ? COLORS.background + "CC" : COLORS.textPrimary + "CC",
+            alignSelf: isOwnMessage ? "flex-start" as const : "flex-end" as const,
+        }
+    ]), [isOwnMessage]);
+
     return (
         <>
             <Image
                 source={{ uri: imageUrl }}
-                style={{
-                    width: IMAGE_WIDTH,
-                    height: imageHeight,
-                    borderRadius: 12,
-                }}
+                style={imageStyle}
                 contentFit="cover"
                 onLoad={handleImageLoad}
                 cachePolicy="memory-disk"
@@ -46,19 +55,20 @@ export const ImageBubble = memo(function ImageBubble({
                 recyclingKey={imageUrl}
             />
 
-            <RNText
-                style={{
-                    color: isOwnMessage
-                        ? COLORS.background + "CC"
-                        : COLORS.textPrimary + "CC",
-                    marginTop: 4,
-                    alignSelf: isOwnMessage ? "flex-start" : "flex-end",
-                    paddingHorizontal: 12,
-                }}
-                variant="caption"
-            >
+            <RNText style={timestampStyle} variant="caption">
                 {formatTimeAMPM(timestamp)}
             </RNText>
         </>
     );
+});
+
+const styles = StyleSheet.create({
+    image: {
+        width: IMAGE_WIDTH,
+        borderRadius: 12,
+    },
+    timestamp: {
+        marginTop: 4,
+        paddingHorizontal: 12,
+    },
 });
