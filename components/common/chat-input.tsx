@@ -3,22 +3,12 @@ import { COLORS } from "@/constant/colors";
 import { useKeyboardVisibility } from "@/hooks/useKeyboardVisibility";
 import { imagePicker } from "@/lib/image-picker";
 import type { Message } from "@/types/chat";
-
-import {
-    AudioModule,
-    RecordingPresets,
-    useAudioPlayer,
-    useAudioRecorder,
-    useAudioRecorderState,
-    useAudioSampleListener,
-} from "expo-audio";
-
-import { Image } from "expo-image";
-import { Mic, MicOff, Paperclip, Pause, Play, Send, StopCircle, X } from "lucide-react-native";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { AudioModule, RecordingPresets, useAudioPlayer, useAudioRecorder, useAudioRecorderState } from "expo-audio";
+import { Mic, Paperclip, Pause, Play, Send, StopCircle, X } from "lucide-react-native";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import Animated, { FadeInUp, FadeOutDown } from "react-native-reanimated";
-import { AudioVisualizer } from "./audio-visualizer";
+import { ReplyPreview } from "./reply-preview";
+import { SimpleWaveform } from "./simple-waveform";
 
 export type ChatInputRef = {
     focus: () => void;
@@ -36,72 +26,31 @@ type ChatInputProps = {
 };
 
 export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
-    (
-        {
-            replyTo,
-            onClearReply,
-            onSendMessage,
-            onSendImage,
-            onSendVoice,
-            bottomInset = 0,
-        },
-        ref,
-    ) => {
-        const audioRecorder = useAudioRecorder({
-            ...RecordingPresets.HIGH_QUALITY,
-            isMeteringEnabled: true,
-        });
+    ({ replyTo, onClearReply, onSendMessage, onSendImage, onSendVoice, bottomInset = 0 }, ref) => {
+        const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
         const recorderState = useAudioRecorderState(audioRecorder);
 
         const [isRecording, setIsRecording] = useState(false);
         const [isPaused, setIsPaused] = useState(false);
         const [audioUri, setAudioUri] = useState<string | null>(null);
         const [recordedDuration, setRecordedDuration] = useState<number>(0);
-        const [previewMetering, setPreviewMetering] = useState<number>(-20);
-        const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
         const [previewCurrentTime, setPreviewCurrentTime] = useState<number>(0);
-        // Use empty string to create a stable player instance
         const previewPlayer = useAudioPlayer(audioUri || "");
         const previewIntervalRef = useRef<NodeJS.Timeout | null>(null);
+        const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
 
         const keyboardVisible = useKeyboardVisibility();
         const inputRef = useRef<TextInput>(null);
         const [inputText, setInputText] = useState("");
 
-        // Audio sample listener - always active but checks conditions
-        useAudioSampleListener(previewPlayer, (sample) => {
-            // Only process if we have audio and it's playing
-            if (!audioUri || !previewPlayer.playing) return;
-                
-                const channel = sample.channels[0];
-                if (!channel || channel.frames.length === 0) return;
-
-                const sumSquares = channel.frames.reduce(
-                    (sum, frame) => sum + frame * frame,
-                    0,
-                );
-                const rms = Math.sqrt(sumSquares / channel.frames.length);
-                const dbfs = rms > 0 ? 20 * Math.log10(rms) : -160;
-                setPreviewMetering(dbfs);
-            });
-
-        // Track preview player state changes
         useEffect(() => {
             if (audioUri && previewPlayer) {
                 setIsPreviewPlaying(previewPlayer.playing);
             } else {
                 setIsPreviewPlaying(false);
             }
-        }, [audioUri, previewPlayer.playing]);
+        }, [audioUri, previewPlayer?.playing]);
 
-        // Reset metering when not playing
-        useEffect(() => {
-            if (!audioUri || !previewPlayer.playing) {
-                setPreviewMetering(-20);
-            }
-        }, [audioUri, previewPlayer.playing]);
-
-        // Poll current time during playback
         useEffect(() => {
             if (previewIntervalRef.current) {
                 clearInterval(previewIntervalRef.current);
@@ -120,13 +69,10 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             };
         }, [audioUri, previewPlayer.playing]);
 
-        // Handle audio end - pause and reset to beginning
         useEffect(() => {
             if (audioUri && previewCurrentTime > 0 && recordedDuration > 0) {
                 const durationInSeconds = recordedDuration / 1000;
-                // Check if we're at the end (within 100ms)
                 if (previewCurrentTime >= durationInSeconds - 0.1) {
-                    // Pause and reset for replay
                     if (previewPlayer.playing) {
                         previewPlayer.pause();
                     }
@@ -143,34 +89,33 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             clearReply: onClearReply,
         }));
 
-        const startRecording = async () => {
+        const startRecording = useCallback(async () => {
             setIsRecording(true);
 
             const status = await AudioModule.requestRecordingPermissionsAsync();
             if (!status.granted) {
-                console.log("Permission to access microphone is required!");
                 return;
             }
 
             await audioRecorder.prepareToRecordAsync();
             audioRecorder.record();
-        };
+        }, [audioRecorder]);
 
-        const pauseRecording = async () => {
+        const pauseRecording = useCallback(async () => {
             if (audioRecorder.isRecording) {
                 setIsPaused(true);
                 audioRecorder.pause();
             }
-        };
+        }, [audioRecorder]);
 
-        const resumeRecording = async () => {
+        const resumeRecording = useCallback(async () => {
             if (!audioRecorder.isRecording && isPaused) {
                 setIsPaused(false);
                 audioRecorder.record();
             }
-        };
+        }, [audioRecorder, isPaused]);
 
-        const stopRecording = async () => {
+        const stopRecording = useCallback(async () => {
             setIsRecording(false);
             setIsPaused(false);
             setRecordedDuration(recorderState.durationMillis);
@@ -179,9 +124,9 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             if (uri) {
                 setAudioUri(uri);
             }
-        };
+        }, [audioRecorder, recorderState]);
 
-        const cancelRecording = () => {
+        const cancelRecording = useCallback(() => {
             if (audioUri && previewPlayer.playing) {
                 previewPlayer.pause();
             }
@@ -191,15 +136,15 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
             setAudioUri(null);
             setRecordedDuration(0);
             setPreviewCurrentTime(0);
-        };
+        }, [audioUri, previewPlayer]);
 
-        const togglePreviewPlayback = () => {
-            if (!audioUri) return;
-            
+        const togglePreviewPlayback = useCallback(() => {
+            if (!audioUri || !previewPlayer) return;
+
             if (previewPlayer.playing) {
                 previewPlayer.pause();
+                setIsPreviewPlaying(false);
             } else {
-                // If at the end, seek to beginning before playing
                 if (previewCurrentTime > 0 && recordedDuration > 0) {
                     const durationInSeconds = recordedDuration / 1000;
                     if (previewCurrentTime >= durationInSeconds - 0.1) {
@@ -208,211 +153,134 @@ export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(
                     }
                 }
                 previewPlayer.play();
+                setIsPreviewPlaying(true);
             }
-        };
+        }, [audioUri, previewPlayer, previewCurrentTime, recordedDuration]);
 
-        const sendVoiceMessage = () => {
+        const sendVoiceMessage = useCallback(() => {
             if (audioUri && onSendVoice) {
                 onSendVoice(audioUri);
                 setAudioUri(null);
                 setRecordedDuration(0);
             }
-        };
+        }, [audioUri, onSendVoice]);
 
-        const handleSendMessage = () => {
+        const handleSendMessage = useCallback(() => {
             if (audioUri) {
                 sendVoiceMessage();
             } else if (inputText.trim() && onSendMessage) {
                 onSendMessage(inputText.trim());
                 setInputText("");
             }
-        };
+        }, [audioUri, inputText, sendVoiceMessage, onSendMessage]);
 
-        const handleUploadImage = async () => {
-            imagePicker(
-                (uri) => {
-                    if (uri && onSendImage) {
-                        onSendImage(uri);
-                    }
-                },
-                {
-                    editable: false,
-                },
-            );
-        };
+        const handleUploadImage = useCallback(async () => {
+            imagePicker((uri) => {
+                if (uri && onSendImage) {
+                    onSendImage(uri);
+                }
+            }, { editable: false });
+        }, [onSendImage]);
 
-        console.log("Metering state:", recorderState.metering);
+        const containerStyle = useMemo(
+            () => [styles.chatOuterContainer, { paddingBottom: bottomInset + 16 }],
+            [bottomInset]
+        );
+
+        const recordingDuration = useMemo(
+            () => Math.ceil(recorderState.durationMillis / 1000),
+            [recorderState.durationMillis]
+        );
+
+        const previewDuration = useMemo(
+            () => Math.ceil(recordedDuration / 1000),
+            [recordedDuration]
+        );
 
         return (
             <>
                 {replyTo && (
-                    <Animated.View
-                        entering={FadeInUp.duration(200)}
-                        exiting={FadeOutDown.duration(200)}
-                        style={styles.replyContainer}
-                    >
-                        <View
-                            style={{
-                                width: "90%",
-                                flexDirection: "row",
-                                alignItems: "center",
-                            }}
-                        >
-                            <View style={styles.replyInner}>
-                                <RNText variant="label">
-                                    Replying to{" "}
-                                    {replyTo.sender === "user1" ? "Alex Johnson" : "Yourself"}
-                                </RNText>
-                                {replyTo.type === "text" ? (
-                                    <RNText numberOfLines={1} variant="caption">
-                                        {replyTo.content}
-                                    </RNText>
-                                ) : replyTo.type === "image" ? (
-                                    <RNText variant="caption" numberOfLines={1}>
-                                        Image
-                                    </RNText>
-                                ) : (
-                                    <RNText variant="caption" numberOfLines={1}>
-                                        Voice message
-                                    </RNText>
-                                )}
-                            </View>
-                            <View style={{ marginLeft: "auto", paddingRight: 12 }}>
-                                {replyTo.type === "image" && (
-                                    <Image
-                                        source={{
-                                            uri: replyTo.file!,
-                                        }}
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: 6,
-                                        }}
-                                        contentFit="contain"
-                                    />
-                                )}
-                            </View>
-                        </View>
-
-                        <Pressable
-                            onPress={onClearReply}
-                            style={{
-                                padding: 4,
-                                flex: 1,
-                            }}
-                        >
-                            <X size={20} style={styles.replyClose} />
-                        </Pressable>
-                    </Animated.View>
+                    <ReplyPreview replyTo={replyTo} onClearReply={onClearReply} />
                 )}
-                <View
-                    style={[
-                        styles.chatOuterContainer,
-                        { paddingBottom: bottomInset + 16 },
-                    ]}
-                >
-                    <View style={styles.chatInnerContainer}>
-                        {keyboardVisible ? null : isRecording ? (
-                            <Pressable onPress={stopRecording}>
-                                <StopCircle color={COLORS.background} size={28} />
-                            </Pressable>
-                        ) : audioUri ? (
-                            <Pressable onPress={cancelRecording}>
-                                <X color={COLORS.error} size={28} />
-                            </Pressable>
-                        ) : (
-                            <Pressable onPress={startRecording}>
-                                <Mic color={COLORS.muted} size={28} />
-                            </Pressable>
-                        )}
-                        {isRecording ? (
-                            <View style={styles.recordingContainer}>
-                                <View style={styles.recordControlsContainer}>
-                                    <View style={styles.recordPill}>
-                                        <RNText style={{ color: COLORS.background }}>
-                                            {Math.ceil(recorderState.durationMillis / 1000)}s
-                                        </RNText>
-                                    </View>
-                                    <Pressable
-                                        style={styles.pauseButton}
-                                        onPress={isPaused ? resumeRecording : pauseRecording}
-                                    >
-                                        {isPaused ? (
-                                            <Play
-                                                size={20}
-                                                color={COLORS.background}
-                                                fill={COLORS.background}
-                                            />
-                                        ) : (
-                                            <Pause
-                                                size={20}
-                                                color={COLORS.background}
-                                                fill={COLORS.background}
-                                            />
-                                        )}
-                                    </Pressable>
+                <View style={containerStyle}>
+                <View style={styles.chatInnerContainer}>
+                    {keyboardVisible && isRecording ? (
+                        <Pressable onPress={stopRecording}>
+                            <StopCircle color={COLORS.background} size={28} />
+                        </Pressable>
+                    ) : audioUri ? (
+                        <Pressable onPress={cancelRecording}>
+                            <X color={COLORS.error} size={28} />
+                        </Pressable>
+                    ) : (
+                        <Pressable onPress={startRecording}>
+                            <Mic color={COLORS.muted} size={28} />
+                        </Pressable>
+                    )}
+
+                    {isRecording ? (
+                        <View style={styles.recordingContainer}>
+                            <View style={styles.recordControlsContainer}>
+                                <View style={styles.recordPill}>
+                                    <RNText style={styles.recordText}>
+                                        {recordingDuration}s
+                                    </RNText>
                                 </View>
-                                <AudioVisualizer
-                                    isRecording={!isPaused && recorderState.isRecording}
-                                    metering={recorderState.metering ?? -160}
-                                />
-                            </View>
-                        ) : audioUri ? (
-                            <View style={styles.recordingContainer}>
-                                <View style={styles.recordControlsContainer}>
-                                    <View style={styles.recordPill}>
-                                        <RNText style={{ color: COLORS.background }}>
-                                            {Math.ceil(recordedDuration / 1000)}s
-                                        </RNText>
-                                    </View>
-                                    <Pressable
-                                        style={styles.pauseButton}
-                                        onPress={togglePreviewPlayback}
-                                    >
-                                        {isPreviewPlaying ? (
-                                            <Pause
-                                                size={20}
-                                                color={COLORS.background}
-                                                fill={COLORS.background}
-                                            />
-                                        ) : (
-                                            <Play
-                                                size={20}
-                                                color={COLORS.background}
-                                                fill={COLORS.background}
-                                            />
-                                        )}
-                                    </Pressable>
-                                </View>
-                                <AudioVisualizer
-                                    isRecording={isPreviewPlaying}
-                                    metering={previewMetering}
-                                />
-                            </View>
-                        ) : (
-                            <>
-                                <TextInput
-                                    ref={inputRef}
-                                    style={styles.chatInput}
-                                    value={inputText}
-                                    onChangeText={setInputText}
-                                    placeholder="Type a message..."
-                                    placeholderTextColor={COLORS.muted}
-                                    multiline
-                                />
-                                <Pressable onPress={handleUploadImage}>
-                                    <Paperclip color={COLORS.muted} size={28} />
+                                <Pressable
+                                    style={styles.pauseButton}
+                                    onPress={isPaused ? resumeRecording : pauseRecording}
+                                >
+                                    {isPaused ? (
+                                        <Play size={20} color={COLORS.background} fill={COLORS.background} />
+                                    ) : (
+                                        <Pause size={20} color={COLORS.background} fill={COLORS.background} />
+                                    )}
                                 </Pressable>
-                            </>
-                        )}
-                    </View>
-                    <Pressable style={styles.sendButton} onPress={handleSendMessage}>
-                        <Send size={28} color={COLORS.background} />
-                    </Pressable>
+                            </View>
+                            <SimpleWaveform isActive={!isPaused && recorderState.isRecording} />
+                        </View>
+                    ) : audioUri ? (
+                        <View style={styles.recordingContainer}>
+                            <View style={styles.recordControlsContainer}>
+                                <View style={styles.recordPill}>
+                                    <RNText style={styles.recordText}>
+                                        {previewDuration}s
+                                    </RNText>
+                                </View>
+                                <Pressable style={styles.pauseButton} onPress={togglePreviewPlayback}>
+                                    {isPreviewPlaying ? (
+                                        <Pause size={20} color={COLORS.background} fill={COLORS.background} />
+                                    ) : (
+                                        <Play size={20} color={COLORS.background} fill={COLORS.background} />
+                                    )}
+                                </Pressable>
+                            </View>
+                            <SimpleWaveform isActive={isPreviewPlaying} />
+                        </View>
+                    ) : (
+                        <>
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.chatInput}
+                                value={inputText}
+                                onChangeText={setInputText}
+                                placeholder="Type a message..."
+                                placeholderTextColor={COLORS.muted}
+                                multiline
+                            />
+                            <Pressable onPress={handleUploadImage}>
+                                <Paperclip color={COLORS.muted} size={28} />
+                            </Pressable>
+                        </>
+                    )}
                 </View>
+                <Pressable style={styles.sendButton} onPress={handleSendMessage}>
+                    <Send size={28} color={COLORS.background} />
+                </Pressable>
+            </View>
             </>
         );
-    },
+    }
 );
 
 ChatInput.displayName = "ChatInput";
@@ -469,6 +337,9 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         minWidth: 50,
     },
+    recordText: {
+        color: COLORS.background,
+    },
     pauseButton: {
         width: 32,
         height: 32,
@@ -482,23 +353,5 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "flex-start",
-    },
-    replyContainer: {
-        width: "100%",
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        backgroundColor: COLORS.background,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-    },
-    replyInner: {
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-    },
-    replyClose: {
-        fontSize: 18,
-        color: COLORS.primary,
-        paddingHorizontal: 8,
     },
 });

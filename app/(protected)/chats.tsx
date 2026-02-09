@@ -92,26 +92,24 @@ export default function ChatScreen() {
         loadMessages();
     }, []);
 
-    async function fetchPreviousMessages() {
-        if (initialLoad === false) {
-            console.log("Initial load not completed yet, skipping fetch.");
+    const fetchPreviousMessages = useCallback(async () => {
+        if (initialLoad === false || isLoadingJump || messages.length === 0) {
             return;
         }
-        if (isLoadingJump) {
-            console.log("Already loading messages, skipping fetch.");
-            return;
-        }
-        if (messages.length === 0) return;
+        
         setIsLoadingJump(true);
-        console.log("Fetching previous messages...");
         const previousMessages: Message[] = await fetchMessages(
             messages[messages.length - 1].id,
         );
-        const newMessages = [...messages, ...previousMessages];
 
-        setMessages(newMessages);
+        if (previousMessages.length === 0) {
+            setIsLoadingJump(false);
+            return;
+        }
+
+        setMessages(prev => [...prev, ...previousMessages]);
         setIsLoadingJump(false);
-    }
+    }, [initialLoad, isLoadingJump, messages]);
 
     const handleMenuPress = useCallback(() => { }, []);
 
@@ -120,7 +118,6 @@ export default function ChatScreen() {
             offset: 0,
             animated: true,
         });
-        setShowScrollToBottom(false);
     }, []);
 
     const jumpToMessage = useCallback(
@@ -140,26 +137,32 @@ export default function ChatScreen() {
                 }
 
                 currentMessages = [...currentMessages, ...previousMessages];
-
-                console.log(
-                    "New set of messages (jump):",
-                    currentMessages.map((m) => m.id),
-                );
-
-                // setMessages(currentMessages);
-
                 index = currentMessages.findIndex((item) => item.id === messageId);
+            }
+
+            if (currentMessages.length !== messages.length) {
+                setMessages(currentMessages);
             }
 
             setIsLoadingJump(false);
 
             if (index !== -1) {
                 requestAnimationFrame(() => {
-                    scrollRef.current?.scrollToIndex({
-                        index,
-                        animated: true,
-                        viewPosition: 0.5,
-                    });
+                    try {
+                        if (scrollRef.current && index < currentMessages.length) {
+                            scrollRef.current.scrollToIndex({
+                                index,
+                                animated: true,
+                                viewPosition: 0.5,
+                            });
+                        }
+                    } catch (error) {
+                        // Fallback to scrollToOffset if scrollToIndex fails
+                        scrollRef.current?.scrollToOffset({
+                            offset: index * 100, // Approximate offset
+                            animated: true,
+                        });
+                    }
 
                     setHighlightedMessageId(messageId);
                     setTimeout(() => {
@@ -218,17 +221,19 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={-bottom}
                 style={styles.keyboardView}
             >
-                {isLoadingJump && (
-                    <View
-                        style={[
-                            styles.loadingContainer,
-                            { zIndex: 1000, marginTop: headerHeight },
-                        ]}
-                    >
-                        <ActivityIndicator size="small" color={COLORS.primary} />
-                        <Text style={styles.loadingText}>Fetching older messages...</Text>
-                    </View>
-                )}
+                <View
+                    style={[
+                        styles.loadingContainer,
+                        {
+                            zIndex: 1000,
+                            marginTop: headerHeight,
+                            display: isLoadingJump ? "flex" : "none",
+                        },
+                    ]}
+                >
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                    <Text style={styles.loadingText}>Fetching older messages...</Text>
+                </View>
 
                 <ScrollToBottomButton
                     visible={showScrollToBottom}
@@ -249,19 +254,32 @@ export default function ChatScreen() {
                     onEndReached={fetchPreviousMessages}
                     onEndReachedThreshold={0.4}
                     onScrollToIndexFailed={(info) => {
-                        setTimeout(() => {
-                            scrollRef.current?.scrollToIndex({
-                                index: info.index,
-                                animated: true,
-                                viewPosition: 0.5,
-                            });
-                        }, 100);
+                        const wait = new Promise(resolve => setTimeout(resolve, 100));
+                        wait.then(() => {
+                            try {
+                                if (scrollRef.current && info.index < messages.length) {
+                                    scrollRef.current.scrollToIndex({
+                                        index: info.index,
+                                        animated: false,
+                                        viewPosition: 0.5,
+                                    });
+                                }
+                            } catch (e) {
+                                // Ignore if still fails
+                            }
+                        });
                     }}
                     contentContainerStyle={[
                         styles.list,
                         { paddingBottom: headerHeight + 16 },
                     ]}
                     showsVerticalScrollIndicator={false}
+                    maxToRenderPerBatch={10}
+                    updateCellsBatchingPeriod={50}
+                    initialNumToRender={15}
+                    windowSize={21}
+                    removeClippedSubviews={false}
+                    getItemLayout={undefined}
                 />
 
                 <ChatInput

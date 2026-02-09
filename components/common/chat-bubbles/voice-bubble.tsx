@@ -1,15 +1,11 @@
 import { formatTimeAMPM } from "@/chat/utils/time";
 import { RNText } from "@/components/ui/text";
 import { COLORS } from "@/constant/colors";
-import {
-    requestRecordingPermissionsAsync,
-    useAudioPlayer,
-    useAudioSampleListener,
-} from "expo-audio";
+import { useAudioPlayer } from "expo-audio";
 import { Pause, Play } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
-import { AudioVisualizer } from "../audio-visualizer";
+import { SimpleWaveform } from "../simple-waveform";
 
 type VoiceBubbleProps = {
     audioUrl: string;
@@ -22,26 +18,21 @@ export const VoiceBubble = memo(function VoiceBubble({
     timestamp,
     isOwnMessage,
 }: VoiceBubbleProps) {
-    const player = useAudioPlayer(audioUrl, {
-        downloadFirst: true,
-    });
+    const player = useAudioPlayer(audioUrl, { downloadFirst: true });
     const [duration, setDuration] = useState<number>(0);
     const [currentTime, setCurrentTime] = useState<number>(0);
-    const [metering, setMetering] = useState<number>(-20);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const permissionRequested = useRef(false);
 
     useEffect(() => {
-        if (!permissionRequested.current) {
-            permissionRequested.current = true;
-            requestRecordingPermissionsAsync().catch(() => {
-                console.warn("Recording permission is required for audio sampling");
-            });
-        }
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
     }, []);
 
-    // Track loading state - check both duration and player status
     useEffect(() => {
         if (player.duration && player.duration > 0) {
             setIsLoading(false);
@@ -49,49 +40,30 @@ export const VoiceBubble = memo(function VoiceBubble({
         }
     }, [player.duration]);
 
-    // Fallback: if player is ready but duration hasn't updated, mark as not loading
     useEffect(() => {
         const timeout = setTimeout(() => {
-            if (player && !player.playing && !isLoading) {
-                // Already loaded
-            } else if (player) {
+            if (player) {
                 setIsLoading(false);
             }
-        }, 2000); // Give it 2 seconds to load
+        }, 2000);
 
         return () => clearTimeout(timeout);
     }, [audioUrl]);
 
-    useAudioSampleListener(
-        player,
-        useCallback(
-            (sample) => {
-                if (!player.playing) return;
-
-                const channel = sample.channels[0];
-                if (!channel || channel.frames.length === 0) return;
-
-                const sumSquares = channel.frames.reduce(
-                    (sum, frame) => sum + frame * frame,
-                    0,
-                );
-                const rms = Math.sqrt(sumSquares / channel.frames.length);
-                const dbfs = rms > 0 ? 20 * Math.log10(rms) : -160;
-
-                setMetering(dbfs);
-            },
-            [player.playing],
-        ),
-    );
-
     useEffect(() => {
+        if (!player) return;
+        
+        setIsPlaying(player.playing);
+
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
         }
 
         if (player.playing) {
             intervalRef.current = setInterval(() => {
-                setCurrentTime(player.currentTime);
+                if (player && player.currentTime !== undefined) {
+                    setCurrentTime(player.currentTime);
+                }
             }, 100);
         }
 
@@ -100,27 +72,34 @@ export const VoiceBubble = memo(function VoiceBubble({
                 clearInterval(intervalRef.current);
             }
         };
-    }, [player.playing]);
+    }, [player, player?.playing]);
 
-    // Handle audio end - pause and reset to beginning
     useEffect(() => {
-        if (!player.playing && currentTime > 0 && duration > 0) {
-            // Check if we're at the end (within 100ms)
-            if (currentTime >= duration - 0.1) {
-                player.pause();
-                player.seekTo(0);
-                setCurrentTime(0);
-            }
+        if (
+            !player.playing &&
+            currentTime > 0 &&
+            duration > 0 &&
+            currentTime >= duration - 0.1
+        ) {
+            player.pause();
+            player.seekTo(0);
+            setCurrentTime(0);
         }
     }, [player.playing, currentTime, duration]);
 
     const togglePlayPause = useCallback(() => {
-        if (isLoading) return;
+        if (isLoading || !player) return;
 
-        if (player.playing) {
-            player.pause();
-        } else {
-            player.play();
+        try {
+            if (player.playing) {
+                player.pause();
+                setIsPlaying(false);
+            } else {
+                player.play();
+                setIsPlaying(true);
+            }
+        } catch (error) {
+            console.error('Audio playback error:', error);
         }
     }, [player, isLoading]);
 
@@ -130,78 +109,71 @@ export const VoiceBubble = memo(function VoiceBubble({
         return `${mins}:${secs.toString().padStart(2, "0")}`;
     }, []);
 
-    useEffect(() => {
-        if (!player.playing) {
-            setMetering(-20);
-        }
-    }, [player.playing]);
+    const durationTextStyle = useMemo(
+        () => [
+            styles.durationText,
+            {
+                color: isOwnMessage
+                    ? COLORS.background + "DD"
+                    : COLORS.textPrimary + "DD",
+            },
+        ],
+        [isOwnMessage],
+    );
 
-    const totalDuration = duration;
+    const timestampStyle = useMemo(
+        () => [
+            styles.timestamp,
+            {
+                color: isOwnMessage
+                    ? COLORS.background + "CC"
+                    : COLORS.textPrimary + "CC",
+                alignSelf: isOwnMessage
+                    ? ("flex-start" as const)
+                    : ("flex-end" as const),
+            },
+        ],
+        [isOwnMessage],
+    );
 
-    const durationTextStyle = useMemo(() => ([
-        voiceStyles.durationText,
-        {
-            color: isOwnMessage ? COLORS.background + "DD" : COLORS.textPrimary + "DD",
-        }
-    ]), [isOwnMessage]);
-
-    const timestampStyle = useMemo(() => ([
-        voiceStyles.timestamp,
-        {
-            color: isOwnMessage ? COLORS.background + "CC" : COLORS.textPrimary + "CC",
-            alignSelf: isOwnMessage ? "flex-start" as const : "flex-end" as const,
-        }
-    ]), [isOwnMessage]);
+    const iconColor = useMemo(
+        () => (isOwnMessage ? COLORS.background : COLORS.primary),
+        [isOwnMessage],
+    );
 
     return (
         <View style={styles.container}>
             <View style={styles.contentContainer}>
-                <View style={styles.visualizerContainer}>
-                    <AudioVisualizer
-                        isRecording={player.playing}
-                        metering={metering}
-                        usePrimaryBg={!isOwnMessage}
-                    />
-                    <RNText
-                        style={durationTextStyle}
-                        variant="caption"
-                    >
+                <View>
+                    <View style={styles.visualizerContainer}>
+                        <SimpleWaveform isActive={isPlaying} color={iconColor} />
+
+                        <Pressable
+                            onPress={togglePlayPause}
+                            style={[
+                                styles.playButton,
+                                isLoading && styles.playButtonDisabled,
+                            ]}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color={iconColor} />
+                            ) : isPlaying ? (
+                                <Pause size={24} color={iconColor} fill={iconColor} />
+                            ) : (
+                                <Play size={24} color={iconColor} fill={iconColor} />
+                            )}
+                        </Pressable>
+                    </View>
+                    <RNText style={durationTextStyle} variant="caption">
                         {isLoading
                             ? "Loading..."
-                            : `${formatDuration(currentTime)} / ${formatDuration(totalDuration)}`}
+                            : `${formatDuration(currentTime)} / ${formatDuration(duration)}`}
                     </RNText>
                 </View>
-
-                <Pressable
-                    onPress={togglePlayPause}
-                    style={[styles.playButton, isLoading && styles.playButtonDisabled]}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator
-                            size="small"
-                            color={isOwnMessage ? COLORS.background : COLORS.primary}
-                        />
-                    ) : player.playing ? (
-                        <Pause
-                            size={24}
-                            color={isOwnMessage ? COLORS.background : COLORS.primary}
-                            fill={isOwnMessage ? COLORS.background : COLORS.primary}
-                        />
-                    ) : (
-                        <Play
-                            size={24}
-                            color={isOwnMessage ? COLORS.background : COLORS.primary}
-                            fill={isOwnMessage ? COLORS.background : COLORS.primary}
-                        />
-                    )}
-                </Pressable>
             </View>
 
-            <RNText
-                style={timestampStyle}
-                variant="caption"
-            >
+            <RNText style={timestampStyle} variant="caption">
                 {formatTimeAMPM(timestamp)}
             </RNText>
         </View>
@@ -218,10 +190,12 @@ const styles = StyleSheet.create({
     },
     visualizerContainer: {
         flex: 1,
+        flexDirection: "row",
+        width: "100%",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     playButton: {
-        width: 40,
-        height: 40,
         borderRadius: 20,
         alignItems: "center",
         justifyContent: "center",
@@ -229,9 +203,6 @@ const styles = StyleSheet.create({
     playButtonDisabled: {
         opacity: 0.5,
     },
-});
-
-const voiceStyles = StyleSheet.create({
     durationText: {
         marginVertical: 4,
     },

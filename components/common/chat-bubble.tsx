@@ -65,11 +65,11 @@ export const ChatBubble = memo(function ChatBubble({
         sts.bubbleContainer,
         {
             backgroundColor: isOwnMessage ? COLORS.primary : COLORS.background,
-            paddingHorizontal: message.type === "image" ? 1 : 16,
-            paddingVertical: message.type === "image" ? 1 : 10,
-            borderRadius: message.type === "image" ? 13 : 24,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 24,
         },
-    ], [isOwnMessage, message.type]);
+    ], [isOwnMessage]);
     
     const containerStyle = useMemo(() => [
         sts.container,
@@ -95,13 +95,11 @@ export const ChatBubble = memo(function ChatBubble({
             ) : null}
             <View style={[bubbleStyle, isHighlighted && sts.highlighted]}>
                 {message.reply && (
-                    <View style={message.type === "image" ? sts.replyPaddingImage : undefined}>
-                        <ReplyBubble 
-                            reply={message.reply} 
-                            isOwnMessage={isOwnMessage}
-                            onPress={() => onReplyPress?.(message.reply!.id)}
-                        />
-                    </View>
+                    <ReplyBubble 
+                        reply={message.reply} 
+                        isOwnMessage={isOwnMessage}
+                        onPress={() => onReplyPress?.(message.reply!.id)}
+                    />
                 )}
 
                 {message.type === "text" ? (
@@ -143,10 +141,6 @@ const sts = StyleSheet.create({
         borderRadius: 20,
         marginRight: 6,
         backgroundColor: COLORS.primary,
-    },
-    replyPaddingImage: {
-        paddingHorizontal: 10,
-        paddingTop: 10,
     },
     highlighted: {
         backgroundColor: COLORS.primary + "22",

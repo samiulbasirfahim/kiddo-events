@@ -710,7 +710,7 @@ export const MESSAGES: Message[] = [
 ];
 
 export const fetchMessages = async (messageId?: string): Promise<Message[]> => {
-    // await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     if (!messageId) {
         return MESSAGES.slice(-10).reverse();
